@@ -15,6 +15,11 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e "./server[dev]"
+      - run: cd server && python -m pytest -q
       - uses: actions/upload-artifact@v4
         with:
           name: rmd-dashboard

@@ -34,6 +34,15 @@ OVERDUE              3
 CLOSED THIS WEEK    17
 ```
 
+## Reporting from uploaded files (analytics OS)
+
+`/#reporting` turns a spreadsheet, CSV, PDF or Word file into key figures, charts, verified findings and a management report in English or Arabic. Three sub-agents (analyst, reviewer, reporter) run on open-weight models through Groq by default, with Nous Portal (Hermes 4), OpenRouter, a local Ollama, or a running Hermes Agent as alternatives. Numbers come only from deterministic tools; a reviewer gate rejects any figure that is not in the evidence. Memory (definitions, baselines, findings) persists in SQLite and is exported as Markdown for Hermes Agent. See `docs/analytics-os.md` and the Hermes skill under `hermes/`.
+
+```bash
+pip install -e "./server[dev]" && uvicorn execflow.api:app --port 8000 --app-dir server
+npm run build   # the service serves the built UI at http://127.0.0.1:8000
+```
+
 ## Roadmap
 
 - **P0 · Capture → Register** — voice/text/minutes → full register with

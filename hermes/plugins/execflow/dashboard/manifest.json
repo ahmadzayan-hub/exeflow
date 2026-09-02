@@ -1,0 +1,10 @@
+{
+  "name": "execflow",
+  "label": "ExecFlow Reporting",
+  "description": "Management reports from uploaded files: datasets, latest confirmed findings and KPI values from the ExecFlow analytics service.",
+  "icon": "BarChart3",
+  "version": "0.1.0",
+  "tab": { "path": "/execflow", "position": "after:sessions" },
+  "entry": "dist/index.js",
+  "api": "plugin_api.py"
+}

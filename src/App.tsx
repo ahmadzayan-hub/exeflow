@@ -12,6 +12,7 @@ import { Header } from "./components/Header";
 import { ProjectCard } from "./components/ProjectCard";
 import { ProjectDetail } from "./components/ProjectDetail";
 import { SummaryTiles } from "./components/SummaryTiles";
+import { ReportingView } from "./reporting/ReportingView";
 
 const seed = seedJson as Portfolio;
 
@@ -21,6 +22,11 @@ export function App() {
   const [filters, setFilters] = useState<FilterState>(emptyFilters);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [view, setView] = useState<"portfolio" | "reporting">(() => (location.hash === "#reporting" ? "reporting" : "portfolio"));
+
+  useEffect(() => {
+    location.hash = view === "reporting" ? "#reporting" : "";
+  }, [view]);
 
   useEffect(() => {
     document.documentElement.lang = lang;
@@ -81,15 +87,31 @@ export function App() {
         onDemo={() => replacePortfolio(buildDemo(seed), true)}
         onReset={() => replacePortfolio(seed, false)}
       />
-      <div className={`banner banner-${portfolio.dataset}`} role="note">
-        <strong>{t(portfolio.dataset, lang)}:</strong> {bi(portfolio.disclaimer, lang)}
-      </div>
+      {view === "portfolio" && (
+        <div className={`banner banner-${portfolio.dataset}`} role="note">
+          <strong>{t(portfolio.dataset, lang)}:</strong> {bi(portfolio.disclaimer, lang)}
+        </div>
+      )}
       {error && (
         <div className="banner banner-error" role="alert">
           {error}
         </div>
       )}
 
+      <nav className="views no-print" aria-label="views">
+        <button type="button" className={`view-btn ${view === "portfolio" ? "active" : ""}`} onClick={() => setView("portfolio")}>
+          {t("navPortfolio", lang)}
+        </button>
+        <button type="button" className={`view-btn ${view === "reporting" ? "active" : ""}`} onClick={() => setView("reporting")}>
+          {t("navReporting", lang)}
+        </button>
+      </nav>
+
+      {view === "reporting" ? (
+        <main>
+          <ReportingView lang={lang} />
+        </main>
+      ) : (
       <main>
         <SummaryTiles summary={summary} lang={lang} filters={filters} onRag={ragFilter} onAttention={attentionFilter} />
         <AttentionPanel portfolio={portfolio} today={today} lang={lang} onSelect={setSelectedId} />
@@ -117,6 +139,7 @@ export function App() {
           )}
         </section>
       </main>
+      )}
 
       <footer className="footer">{t("footer", lang)}</footer>
 
