@@ -46,3 +46,18 @@ CLOSED THIS WEEK    17
 ## KPIs
 
 `closure rate` · `decision/action lead time`
+
+## RMD Projects Executive Dashboard (first screen)
+
+Executive view of the Rail Maintenance Department project and contract
+portfolio: director tiles, computed schedule health, a director attention
+list (decisions, overdue, waiting), bilingual EN/AR with RTL, print, and JSON
+import/export. Ships as one self-contained HTML file.
+
+```bash
+npm ci && npm test && npm run build   # dist/rmd-dashboard.html
+```
+
+See [docs/rmd-dashboard.md](docs/rmd-dashboard.md) for the data rules and
+the monthly update cycle.
+
