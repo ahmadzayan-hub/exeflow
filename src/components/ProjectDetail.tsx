@@ -66,11 +66,11 @@ export function ProjectDetail({ project: p, today, lang, onClose }: Props) {
             <h3>{t("derived", lang)}</h3>
             <ul className="list">
               {flags.map((f) => (
-                <li key={f.kind + f.title.en} className="flag">
+                <li key={f.id} className={f.kind === "completion-approaching" ? "" : "flag"}>
                   {lang === "ar" ? f.title.ar : f.title.en}
                   {" · "}
                   <strong>
-                    {f.days} {f.kind === "contract-expiry" ? t("daysLeft", lang) : t("daysOverdue", lang)}
+                    {f.days} {f.kind === "contract-expiry" || f.kind === "completion-approaching" ? t("daysLeft", lang) : t("daysOverdue", lang)}
                   </strong>
                 </li>
               ))}

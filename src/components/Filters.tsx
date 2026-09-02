@@ -1,6 +1,6 @@
 import type { Lang } from "../i18n";
 import { bi, t } from "../i18n";
-import { derivedFlags, scheduleRag } from "../metrics";
+import { attentionBuckets, needsDecisionCount, scheduleRag } from "../metrics";
 import type { Asset, Category, Kind, Project, Rag, Stage } from "../types";
 
 export interface FilterState {
@@ -23,9 +23,12 @@ export function applyFilters(projects: Project[], f: FilterState, today: Date, l
     if (f.stage && p.stage !== f.stage) return false;
     if (f.kind && p.kind !== f.kind) return false;
     if (f.rag && scheduleRag(p, today) !== f.rag) return false;
-    if (f.attention === "decision" && !p.attention.some((a) => a.status === "open" && a.type === "decision")) return false;
-    if (f.attention === "waiting" && !p.attention.some((a) => a.status === "open" && a.type === "waiting")) return false;
-    if (f.attention === "overdue" && !derivedFlags(p, today).some((x) => x.kind !== "contract-expiry")) return false;
+    if (f.attention) {
+      const b = attentionBuckets(p, today);
+      if (f.attention === "decision" && needsDecisionCount(b) === 0) return false;
+      if (f.attention === "waiting" && b.waiting.length === 0) return false;
+      if (f.attention === "overdue" && b.overdueCount === 0) return false;
+    }
     if (q) {
       const hay = [p.name.en, p.name.ar ?? "", p.code ?? "", p.contractor ?? "", p.consultant ?? "", bi(p.name, lang)]
         .join(" ")

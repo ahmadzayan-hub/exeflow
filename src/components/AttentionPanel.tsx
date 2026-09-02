@@ -1,6 +1,6 @@
 import type { Lang } from "../i18n";
 import { bi, t } from "../i18n";
-import { derivedFlags, formatDate, isAttentionOverdue, parseDate, daysBetween } from "../metrics";
+import { attentionBuckets, daysBetween, formatDate, parseDate } from "../metrics";
 import type { AttentionItem, Portfolio, Project } from "../types";
 
 interface Props {
@@ -17,40 +17,40 @@ interface Row {
   owner?: string;
   reference?: string;
   due?: string | null;
+  /** days past due (overdue column) or days until due / expiry (other columns) */
   days?: number;
   derived?: boolean;
   tbc?: boolean;
 }
 
+/**
+ * Three columns built from the same buckets the tiles count, so the numbers
+ * on the tiles and on the column headers always match.
+ */
 export function AttentionPanel({ portfolio, today, lang, onSelect }: Props) {
   const decisions: Row[] = [];
   const waiting: Row[] = [];
   const overdue: Row[] = [];
 
   for (const p of portfolio.projects) {
-    for (const a of p.attention) {
-      if (a.status !== "open") continue;
-      const row = toRow(p, a, lang, today);
-      if (isAttentionOverdue(a, today)) overdue.push(row);
-      else if (a.type === "decision") decisions.push(row);
-      else if (a.type === "waiting") waiting.push(row);
+    const b = attentionBuckets(p, today);
+    for (const a of b.decisions) decisions.push(toRow(p, a, lang, today, "until"));
+    for (const a of b.waiting) waiting.push(toRow(p, a, lang, today, "until"));
+    for (const a of b.overdueItems) overdue.push(toRow(p, a, lang, today, "past"));
+    if (b.contractExpiry) {
+      const f = b.contractExpiry;
+      decisions.push({ key: `${p.id}-${f.id}`, project: p, title: lang === "ar" ? f.title.ar : f.title.en, reference: f.reference, days: f.days, derived: true });
     }
-    for (const f of derivedFlags(p, today)) {
-      if (f.kind === "attention-overdue") continue; // already listed above
-      const row: Row = {
-        key: `${p.id}-${f.kind}-${f.title.en}`,
-        project: p,
-        title: lang === "ar" ? f.title.ar : f.title.en,
-        reference: f.reference,
-        days: f.days,
-        derived: true,
-      };
-      if (f.kind === "contract-expiry") decisions.push(row);
-      else overdue.push(row);
+    for (const f of b.flags) {
+      if (f.kind !== "milestone-overdue") continue;
+      overdue.push({ key: `${p.id}-${f.id}`, project: p, title: lang === "ar" ? f.title.ar : f.title.en, days: f.days, derived: true });
     }
   }
+  // most overdue first; soonest due first, undated last
   overdue.sort((a, b) => (b.days ?? 0) - (a.days ?? 0));
-  decisions.sort((a, b) => (a.days ?? 9999) - (b.days ?? 9999));
+  const soonest = (a: Row, b: Row) => (a.days ?? Number.MAX_SAFE_INTEGER) - (b.days ?? Number.MAX_SAFE_INTEGER);
+  decisions.sort(soonest);
+  waiting.sort(soonest);
 
   return (
     <section className="attention" aria-label={t("attentionTitle", lang)}>
@@ -64,8 +64,9 @@ export function AttentionPanel({ portfolio, today, lang, onSelect }: Props) {
   );
 }
 
-function toRow(p: Project, a: AttentionItem, lang: Lang, today: Date): Row {
+function toRow(p: Project, a: AttentionItem, lang: Lang, today: Date, mode: "until" | "past"): Row {
   const due = parseDate(a.due);
+  const past = due ? daysBetween(due, today) : undefined;
   return {
     key: `${p.id}-${a.id}`,
     project: p,
@@ -73,7 +74,7 @@ function toRow(p: Project, a: AttentionItem, lang: Lang, today: Date): Row {
     owner: a.owner,
     reference: a.reference,
     due: a.due,
-    days: due ? daysBetween(due, today) : undefined,
+    days: past == null ? undefined : mode === "past" ? past : -past,
     tbc: a.confidence === "tbc",
   };
 }

@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  attentionBuckets,
   derivedFlags,
+  needsDecisionCount,
   nextMilestone,
+  reportingWindow,
   overdueMilestones,
   scheduleRag,
   scheduleVariance,
@@ -96,18 +99,79 @@ describe("milestone helpers", () => {
 });
 
 describe("derivedFlags", () => {
-  it("flags a contract ending within 90 days", () => {
-    const p = project({ kind: "contract", ntp: "2023-11-01", completion: "2026-11-30" });
-    const flags = derivedFlags(p, today);
+  it("flags a contract ending within 90 days as a decision, a project completion as information", () => {
+    const c = project({ kind: "contract", ntp: "2023-11-01", completion: "2026-11-30" });
+    const flags = derivedFlags(c, today);
     expect(flags).toHaveLength(1);
     expect(flags[0].kind).toBe("contract-expiry");
     expect(flags[0].days).toBe(89);
+    const p = project({ kind: "project", ntp: "2023-11-01", completion: "2026-11-30" });
+    expect(derivedFlags(p, today).map((f) => f.kind)).toEqual(["completion-approaching"]);
+    expect(attentionBuckets(p, today).contractExpiry).toBeNull();
+  });
+  it("keys flags by the milestone id so duplicate titles do not collide", () => {
+    const p = project({
+      milestones: [
+        { id: "m1", title: { en: "Site works" }, planned: "2026-08-01", status: "open" },
+        { id: "m2", title: { en: "Site works" }, planned: "2026-08-15", status: "open" },
+      ],
+    });
+    const ids = derivedFlags(p, today).map((f) => f.id);
+    expect(new Set(ids).size).toBe(2);
   });
   it("flags overdue attention items", () => {
     const p = project({
       attention: [{ id: "a", type: "waiting", title: { en: "reply" }, due: "2026-08-01", status: "open" }],
     });
     expect(derivedFlags(p, today).map((f) => f.kind)).toEqual(["attention-overdue"]);
+  });
+});
+
+describe("attentionBuckets", () => {
+  it("moves past-due decisions and waiting items to overdue so tiles and columns agree", () => {
+    const p = project({
+      kind: "contract",
+      ntp: "2023-11-01",
+      completion: "2026-11-30",
+      milestones: [{ id: "m", title: { en: "m" }, planned: "2026-08-01", status: "open" }],
+      attention: [
+        { id: "d1", type: "decision", title: { en: "d1" }, due: "2026-09-30", status: "open" },
+        { id: "d2", type: "decision", title: { en: "d2" }, due: "2026-08-01", status: "open" },
+        { id: "w1", type: "waiting", title: { en: "w1" }, status: "open" },
+        { id: "w2", type: "waiting", title: { en: "w2" }, status: "closed", closedOn: "2026-08-20" },
+      ],
+    });
+    const b = attentionBuckets(p, today);
+    expect(b.decisions.map((a) => a.id)).toEqual(["d1"]);
+    expect(b.waiting.map((a) => a.id)).toEqual(["w1"]);
+    expect(b.overdueItems.map((a) => a.id)).toEqual(["d2"]);
+    expect(b.overdueCount).toBe(2); // d2 + milestone m
+    expect(needsDecisionCount(b)).toBe(2); // d1 + contract expiry
+    const s = summarise({ ...(seed as Portfolio), projects: [p] }, today);
+    expect(s.needsDecision).toBe(2);
+    expect(s.waiting).toBe(1);
+    expect(s.overdue).toBe(2);
+    expect(s.closedThisPeriod).toBe(1);
+  });
+});
+
+describe("reportingWindow", () => {
+  it("uses explicit start and end when given", () => {
+    const w = reportingWindow(seed as Portfolio);
+    expect(w.start.toISOString().slice(0, 10)).toBe("2026-08-01");
+    expect(w.end.toISOString().slice(0, 10)).toBe("2026-08-31");
+  });
+  it("falls back to the calendar month of the as-of date", () => {
+    const p: Portfolio = { ...(seed as Portfolio), reportingPeriod: { label: { en: "x" }, asOf: "2026-09-15" } };
+    const w = reportingWindow(p);
+    expect(w.start.toISOString().slice(0, 10)).toBe("2026-09-01");
+    expect(w.end.toISOString().slice(0, 10)).toBe("2026-09-30");
+    const closedInPeriod = project({ attention: [{ id: "a", type: "waiting", title: { en: "a" }, status: "closed", closedOn: "2026-09-02" }] });
+    expect(summarise({ ...p, projects: [closedInPeriod] }, new Date("2026-09-15T00:00:00Z")).closedThisPeriod).toBe(1);
+    // a July closure must not leak into an August-labelled period whose as-of is 31 Aug
+    const aug: Portfolio = { ...(seed as Portfolio), reportingPeriod: { label: { en: "Aug" }, asOf: "2026-08-31" } };
+    const closedJuly = project({ attention: [{ id: "a", type: "waiting", title: { en: "a" }, status: "closed", closedOn: "2026-07-10" }] });
+    expect(summarise({ ...aug, projects: [closedJuly] }, new Date("2026-08-31T00:00:00Z")).closedThisPeriod).toBe(0);
   });
 });
 
@@ -121,7 +185,7 @@ describe("seed portfolio", () => {
     }
   });
   it("summarises without throwing and counts the expiring tram contract", () => {
-    const s = summarise(portfolio, today, new Date("2026-08-01T00:00:00Z"));
+    const s = summarise(portfolio, today);
     expect(s.projects + s.contracts).toBe(portfolio.projects.length);
     expect(s.expiringIn90).toBeGreaterThanOrEqual(1);
     expect(s.knownValueAed).toBeGreaterThan(96_000_000);
@@ -137,7 +201,7 @@ describe("demo portfolio", () => {
       expect(p.progress.actual).not.toBeNull();
       expect(p.confidence).toBe("illustrative");
     }
-    const s = summarise(demo, today, new Date("2026-08-01T00:00:00Z"));
+    const s = summarise(demo, today);
     expect(s.rag.grey).toBe(0);
   });
 });

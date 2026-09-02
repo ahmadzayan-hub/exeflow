@@ -86,8 +86,9 @@ export function isAttentionOverdue(a: AttentionItem, today: Date): boolean {
 }
 
 export interface DerivedFlag {
+  id: string;
   projectId: string;
-  kind: "milestone-overdue" | "contract-expiry" | "attention-overdue";
+  kind: "milestone-overdue" | "contract-expiry" | "completion-approaching" | "attention-overdue";
   title: { en: string; ar: string };
   days: number; // days overdue (positive) or days remaining (for expiry)
   reference?: string;
@@ -98,6 +99,7 @@ export function derivedFlags(p: Project, today: Date, expiryWindowDays = 90): De
   const flags: DerivedFlag[] = [];
   for (const m of overdueMilestones(p, today)) {
     flags.push({
+      id: `milestone-overdue:${m.id}`,
       projectId: p.id,
       kind: "milestone-overdue",
       title: { en: `Milestone overdue: ${m.title.en}`, ar: `معلم متأخر: ${m.title.ar ?? m.title.en}` },
@@ -106,20 +108,31 @@ export function derivedFlags(p: Project, today: Date, expiryWindowDays = 90): De
   }
   const remaining = daysToCompletion(p, today);
   if (remaining != null && remaining >= 0 && remaining <= expiryWindowDays && p.stage !== "closed") {
-    flags.push({
-      projectId: p.id,
-      kind: "contract-expiry",
-      title: {
-        en: p.kind === "contract" ? "Contract expiry: renewal or retender decision" : "Planned completion approaching",
-        ar: p.kind === "contract" ? "انتهاء العقد: قرار التجديد أو إعادة الطرح" : "اقتراب موعد الإنجاز المخطط",
-      },
-      days: remaining,
-      reference: p.code ?? undefined,
-    });
+    // Only a contract end is a decision (renew, extend or retender); a project completion is information.
+    flags.push(
+      p.kind === "contract"
+        ? {
+            id: "contract-expiry",
+            projectId: p.id,
+            kind: "contract-expiry",
+            title: { en: "Contract expiry: renewal or retender decision", ar: "انتهاء العقد: قرار التجديد أو إعادة الطرح" },
+            days: remaining,
+            reference: p.code ?? undefined,
+          }
+        : {
+            id: "completion-approaching",
+            projectId: p.id,
+            kind: "completion-approaching",
+            title: { en: "Planned completion approaching", ar: "اقتراب موعد الإنجاز المخطط" },
+            days: remaining,
+            reference: p.code ?? undefined,
+          },
+    );
   }
   for (const a of p.attention) {
     if (isAttentionOverdue(a, today)) {
       flags.push({
+        id: `attention-overdue:${a.id}`,
         projectId: p.id,
         kind: "attention-overdue",
         title: { en: a.title.en, ar: a.title.ar ?? a.title.en },
@@ -129,6 +142,53 @@ export function derivedFlags(p: Project, today: Date, expiryWindowDays = 90): De
     }
   }
   return flags;
+}
+
+/**
+ * One classification of a project's open items, shared by the tiles, the
+ * attention panel and the filters so their counts always agree.
+ */
+export interface AttentionBuckets {
+  /** open decisions not yet past due, plus a contract-expiry flag when present */
+  decisions: AttentionItem[];
+  waiting: AttentionItem[];
+  /** open items past their due date (any type) */
+  overdueItems: AttentionItem[];
+  flags: DerivedFlag[];
+  contractExpiry: DerivedFlag | null;
+  /** overdue items + overdue milestones */
+  overdueCount: number;
+}
+
+export function attentionBuckets(p: Project, today: Date): AttentionBuckets {
+  const open = p.attention.filter((a) => a.status === "open");
+  const overdueItems = open.filter((a) => isAttentionOverdue(a, today));
+  const current = open.filter((a) => !isAttentionOverdue(a, today));
+  const flags = derivedFlags(p, today);
+  const contractExpiry = flags.find((f) => f.kind === "contract-expiry") ?? null;
+  return {
+    decisions: current.filter((a) => a.type === "decision"),
+    waiting: current.filter((a) => a.type === "waiting"),
+    overdueItems,
+    flags,
+    contractExpiry,
+    overdueCount: overdueItems.length + flags.filter((f) => f.kind === "milestone-overdue").length,
+  };
+}
+
+export function needsDecisionCount(b: AttentionBuckets): number {
+  return b.decisions.length + (b.contractExpiry ? 1 : 0);
+}
+
+/** Reporting window: explicit start/end when given, otherwise the calendar month of the as-of date. */
+export function reportingWindow(portfolio: Portfolio): { start: Date; end: Date } {
+  const asOf = parseDate(portfolio.reportingPeriod.asOf) ?? new Date();
+  const start = parseDate(portfolio.reportingPeriod.start);
+  const end = parseDate(portfolio.reportingPeriod.end);
+  if (start && end && end >= start) return { start, end };
+  const s = new Date(Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth(), 1));
+  const e = new Date(Date.UTC(asOf.getUTCFullYear(), asOf.getUTCMonth() + 1, 0));
+  return { start: s, end: e };
 }
 
 export interface PortfolioSummary {
@@ -145,49 +205,41 @@ export interface PortfolioSummary {
   expiringIn90: number;
 }
 
-export function summarise(portfolio: Portfolio, today: Date, periodStart: Date): PortfolioSummary {
+export function summarise(portfolio: Portfolio, today: Date): PortfolioSummary {
+  const { start, end } = reportingWindow(portfolio);
   const rag: Record<Rag, number> = { green: 0, amber: 0, red: 0, grey: 0 };
-  let knownValueAed = 0;
-  let valueUnknown = 0;
-  let needsDecision = 0;
-  let waiting = 0;
-  let overdue = 0;
-  let closedThisPeriod = 0;
-  let dueIn30 = 0;
-  let expiringIn90 = 0;
-  let projects = 0;
-  let contracts = 0;
+  const s: PortfolioSummary = {
+    projects: 0,
+    contracts: 0,
+    knownValueAed: 0,
+    valueUnknown: 0,
+    rag,
+    needsDecision: 0,
+    waiting: 0,
+    overdue: 0,
+    closedThisPeriod: 0,
+    dueIn30: 0,
+    expiringIn90: 0,
+  };
 
   for (const p of portfolio.projects) {
-    if (p.kind === "contract") contracts++;
-    else projects++;
-    if (p.valueAed != null) knownValueAed += p.valueAed;
-    else valueUnknown++;
+    if (p.kind === "contract") s.contracts++;
+    else s.projects++;
+    if (p.valueAed != null) s.knownValueAed += p.valueAed;
+    else s.valueUnknown++;
     rag[scheduleRag(p, today)]++;
+    const b = attentionBuckets(p, today);
+    s.needsDecision += needsDecisionCount(b);
+    s.waiting += b.waiting.length;
+    s.overdue += b.overdueCount;
+    if (b.contractExpiry) s.expiringIn90++;
     for (const a of p.attention) {
-      if (a.status === "open" && a.type === "decision") needsDecision++;
-      if (a.status === "open" && a.type === "waiting") waiting++;
       const closed = parseDate(a.closedOn);
-      if (a.status === "closed" && closed && closed >= periodStart && closed <= today) closedThisPeriod++;
+      if (a.status === "closed" && closed && closed >= start && closed <= end) s.closedThisPeriod++;
     }
-    const flags = derivedFlags(p, today);
-    overdue += flags.filter((f) => f.kind !== "contract-expiry").length;
-    expiringIn90 += flags.filter((f) => f.kind === "contract-expiry").length;
-    dueIn30 += upcomingMilestones(p, today, 30).length;
+    s.dueIn30 += upcomingMilestones(p, today, 30).length;
   }
-  return {
-    projects,
-    contracts,
-    knownValueAed,
-    valueUnknown,
-    rag,
-    needsDecision,
-    waiting,
-    overdue,
-    closedThisPeriod,
-    dueIn30,
-    expiringIn90,
-  };
+  return s;
 }
 
 export function formatAed(v: number | null | undefined, lang: "en" | "ar" = "en"): string {

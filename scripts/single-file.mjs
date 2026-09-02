@@ -2,8 +2,9 @@
 // so the dashboard can be opened from a phone or emailed without a server.
 import { readFileSync, writeFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const dist = new URL("../dist/", import.meta.url).pathname;
+const dist = fileURLToPath(new URL("../dist/", import.meta.url));
 let html = readFileSync(join(dist, "index.html"), "utf8");
 const assets = join(dist, "assets");
 

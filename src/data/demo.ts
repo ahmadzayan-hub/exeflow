@@ -12,7 +12,7 @@ export function buildDemo(seed: Portfolio): Portfolio {
     const actual = Math.max(0, Math.min(100, planned + drift));
     const valueAed = p.valueAed ?? 2_000_000 + ((i * 3_750_000) % 40_000_000);
     const ntp = p.ntp ?? `2025-0${1 + (i % 9)}-15`;
-    const completion = p.completion ?? `2027-0${1 + ((i + 3) % 9)}-30`;
+    const completion = p.completion ?? `2027-0${1 + ((i + 3) % 9)}-28`;
     const milestones: Milestone[] = p.milestones.length
       ? p.milestones
       : [

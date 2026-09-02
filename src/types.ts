@@ -102,7 +102,7 @@ export interface Portfolio {
   title: Bilingual;
   organisation: Bilingual;
   dataset: "seed" | "demo" | "imported";
-  reportingPeriod: { label: Bilingual; asOf: string };
+  reportingPeriod: { label: Bilingual; asOf: string; start?: string | null; end?: string | null };
   disclaimer: Bilingual;
   projects: Project[];
 }

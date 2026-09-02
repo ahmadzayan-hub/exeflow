@@ -3,7 +3,7 @@
   "title": { "en": "RMD Projects Executive Dashboard", "ar": "لوحة المتابعة التنفيذية لمشاريع إدارة صيانة القطارات" },
   "organisation": { "en": "RTA Rail Agency · Rail Maintenance Department", "ar": "هيئة الطرق والمواصلات · مؤسسة القطارات · إدارة صيانة القطارات" },
   "dataset": "seed",
-  "reportingPeriod": { "label": { "en": "August 2026", "ar": "أغسطس 2026" }, "asOf": "2026-09-02" },
+  "reportingPeriod": { "label": { "en": "August 2026", "ar": "أغسطس 2026" }, "start": "2026-08-01", "end": "2026-08-31", "asOf": "2026-09-02" },
   "disclaimer": {
     "en": "Seed register. Contract references, values and dates are taken from RMD records on file. Progress, status and open items marked TBC have not been confirmed against OPMS and must be updated before circulation.",
     "ar": "سجل أولي. مراجع العقود والقيم والتواريخ مأخوذة من سجلات الإدارة. نسب الإنجاز والحالات والبنود المعلّمة بـ (غير محدد) لم يتم تأكيدها من نظام OPMS ويجب تحديثها قبل التعميم."

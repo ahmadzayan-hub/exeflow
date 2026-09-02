@@ -54,9 +54,15 @@ Derived flags (not stored, computed from dates):
 
 - Milestone overdue: an open milestone with a planned date before the
   reporting date.
-- Contract expiry: completion or contract end within 90 days. For contracts
-  this is listed under Needs my decision as a renewal or retender decision.
-- Item overdue: an open item with a due date before the reporting date.
+- Contract expiry: a contract end within 90 days is listed under Needs my
+  decision as a renewal or retender decision. A project completion within 90
+  days is shown in the project detail as information only.
+- Item overdue: an open item with a due date before the reporting date. Such
+  items move from the Decision or Waiting column to the Overdue column, and
+  the tiles count the same way, so tile and column numbers always agree.
+- Closed this period: items with `closedOn` inside the reporting window.
+  The window is `reportingPeriod.start` to `reportingPeriod.end`; when those
+  are absent, the calendar month of the as-of date.
 
 Data confidence per project and per open item:
 
@@ -75,7 +81,7 @@ items (decision, waiting, info) and sources.
 
 Monthly cycle:
 
-1. Update `reportingPeriod` (label and as-of date).
+1. Update `reportingPeriod` (label, start, end and as-of date).
 2. Enter planned and actual progress per project from the monthly Projects
    Progress Overview Report or OPMS.
 3. Update milestone actual dates and statuses.

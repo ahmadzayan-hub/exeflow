@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import seedJson from "./data/portfolio.json";
 import { buildDemo } from "./data/demo";
 import type { Lang } from "./i18n";
@@ -29,16 +29,10 @@ export function App() {
   }, [lang]);
 
   const today = useMemo(() => parseDate(portfolio.reportingPeriod.asOf) ?? new Date(), [portfolio]);
-  const periodStart = useMemo(() => {
-    const d = new Date(today);
-    d.setUTCDate(1);
-    d.setUTCMonth(d.getUTCMonth() - 1);
-    return d;
-  }, [today]);
-
-  const summary = useMemo(() => summarise(portfolio, today, periodStart), [portfolio, today, periodStart]);
+  const summary = useMemo(() => summarise(portfolio, today), [portfolio, today]);
   const visible = useMemo(() => applyFilters(portfolio.projects, filters, today, lang), [portfolio, filters, today, lang]);
   const selected = portfolio.projects.find((p) => p.id === selectedId) ?? null;
+  const closeDetail = useCallback(() => setSelectedId(null), []);
 
   function replacePortfolio(p: Portfolio, persist: boolean) {
     setPortfolio(p);
@@ -65,8 +59,11 @@ export function App() {
     const a = document.createElement("a");
     a.href = url;
     a.download = `rmd-portfolio-${portfolio.reportingPeriod.asOf}.json`;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    a.remove();
+    // revoke after the browser has started the download (Firefox and Safari need the delay)
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
   }
 
   const ragFilter = (rag: Rag) => setFilters((f) => ({ ...f, rag: f.rag === rag ? "" : rag }));
@@ -123,7 +120,7 @@ export function App() {
 
       <footer className="footer">{t("footer", lang)}</footer>
 
-      {selected && <ProjectDetail project={selected} today={today} lang={lang} onClose={() => setSelectedId(null)} />}
+      {selected && <ProjectDetail project={selected} today={today} lang={lang} onClose={closeDetail} />}
     </div>
   );
 }

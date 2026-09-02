@@ -116,8 +116,9 @@ const table = {
 
 export type Key = keyof typeof table;
 
-export function t(key: Key, lang: Lang): string {
-  const pair = table[key];
+export function t(key: Key | string, lang: Lang): string {
+  const pair = (table as Record<string, readonly [string, string] | undefined>)[key];
+  if (!pair) return key; // unknown enum value from an imported file: show it as-is
   return lang === "ar" ? pair[1] : pair[0];
 }
 
