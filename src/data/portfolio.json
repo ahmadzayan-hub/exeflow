@@ -1,0 +1,398 @@
+{
+  "schemaVersion": 1,
+  "title": { "en": "RMD Projects Executive Dashboard", "ar": "لوحة المتابعة التنفيذية لمشاريع إدارة صيانة القطارات" },
+  "organisation": { "en": "RTA Rail Agency · Rail Maintenance Department", "ar": "هيئة الطرق والمواصلات · مؤسسة القطارات · إدارة صيانة القطارات" },
+  "dataset": "seed",
+  "reportingPeriod": { "label": { "en": "August 2026", "ar": "أغسطس 2026" }, "start": "2026-08-01", "end": "2026-08-31", "asOf": "2026-09-02" },
+  "disclaimer": {
+    "en": "Seed register. Contract references, values and dates are taken from RMD records on file. Progress, status and open items marked TBC have not been confirmed against OPMS and must be updated before circulation.",
+    "ar": "سجل أولي. مراجع العقود والقيم والتواريخ مأخوذة من سجلات الإدارة. نسب الإنجاز والحالات والبنود المعلّمة بـ (غير محدد) لم يتم تأكيدها من نظام OPMS ويجب تحديثها قبل التعميم."
+  },
+  "projects": [
+    {
+      "id": "atc-smc-upgrade",
+      "kind": "project",
+      "code": "RA/RM/24-10128",
+      "name": { "en": "ATC SMC Upgrade (Dubai Metro)", "ar": "تحديث نظام التحكم الآلي في القطارات SMC (مترو دبي)" },
+      "asset": "metro",
+      "category": "signalling",
+      "stage": "execution",
+      "contractor": "Hitachi Rail GTS (tripartite with Keolis-MHI)",
+      "consultant": "SENER (Independent Certifier from 5 Nov 2025); ISA: Dr. Monish Sengupta",
+      "valueAed": 96000000,
+      "spentAed": null,
+      "ntp": "2025-08-13",
+      "completion": "2028-02-12",
+      "dlpEnd": "2030-02-12",
+      "progress": { "planned": null, "actual": null, "asOf": null },
+      "workPackages": [
+        { "code": "WP-A", "title": { "en": "Hardware and cybersecurity infrastructure", "ar": "الأجهزة والبنية التحتية للأمن السيبراني" }, "valueAed": null },
+        { "code": "WP-B", "title": { "en": "Software upgrade (TLOC, VCC, loop length)", "ar": "تحديث البرمجيات (TLOC، VCC، طول الحلقة)" }, "valueAed": null },
+        { "code": "WP-C", "title": { "en": "Cybersecurity hardening, virtualisation, domain controller", "ar": "تعزيز الأمن السيبراني والمحاكاة الافتراضية ووحدة التحكم بالنطاق" }, "valueAed": 16910000 }
+      ],
+      "milestones": [
+        { "id": "ntp", "title": { "en": "Notice to Proceed", "ar": "إشعار المباشرة" }, "planned": "2025-08-13", "actual": "2025-08-13", "status": "done" },
+        { "id": "certifier", "title": { "en": "Independent Certifier mobilised (SENER)", "ar": "تعيين المصدّق المستقل (SENER)" }, "planned": "2025-11-05", "actual": "2025-11-05", "status": "done" },
+        { "id": "taking-over", "title": { "en": "Taking Over", "ar": "التسلّم" }, "planned": "2028-02-12", "status": "open" },
+        { "id": "dlp-end", "title": { "en": "Defects Liability Period end", "ar": "انتهاء فترة المسؤولية عن العيوب" }, "planned": "2030-02-12", "status": "open" }
+      ],
+      "risks": [
+        { "id": "r1", "title": { "en": "Safety Program Plan must pass ISA/certifier review before implementation", "ar": "يجب اجتياز خطة برنامج السلامة مراجعة المصدّق المستقل قبل التنفيذ" }, "rating": "high" },
+        { "id": "r2", "title": { "en": "WP-C OT hardening interfaces with OT SOC programme", "ar": "تداخل حزمة WP-C مع برنامج مركز عمليات الأمن السيبراني التشغيلي" }, "rating": "medium" },
+        { "id": "r3", "title": { "en": "Performance bond and delay penalty regime to be maintained through DLP", "ar": "الحفاظ على ضمان الأداء ونظام غرامات التأخير حتى نهاية فترة المسؤولية عن العيوب" }, "rating": "medium" }
+      ],
+      "attention": [
+        { "id": "a1", "type": "waiting", "title": { "en": "WP-A / WP-B / WP-C milestone status vs. NTP programme (OPMS update)", "ar": "حالة معالم حزم العمل A/B/C مقابل برنامج إشعار المباشرة (تحديث OPMS)" }, "owner": "Keolis-MHI / Hitachi Rail GTS", "due": null, "status": "open", "confidence": "tbc" }
+      ],
+      "sources": ["RA/RM/24-10128", "RMD technical reference: Dubai Metro key contracts"],
+      "confidence": "verified",
+      "notes": "Tripartite contract: RTA, Keolis-MHI, Hitachi Rail GTS. Progress percentages not on file; enter from the monthly Projects Progress Overview Report."
+    },
+    {
+      "id": "sener-rail-systems-consultancy",
+      "kind": "project",
+      "code": "RA/RM/25-13910",
+      "name": { "en": "Rail Systems Enhancement Consultancy (SENER)", "ar": "استشارات تعزيز أنظمة السكك الحديدية (SENER)" },
+      "asset": "both",
+      "category": "consultancy",
+      "stage": "execution",
+      "contractor": null,
+      "consultant": "SENER Mobility (Mario Neves)",
+      "valueAed": 19240000,
+      "spentAed": null,
+      "ntp": null,
+      "completion": null,
+      "dlpEnd": null,
+      "progress": { "planned": null, "actual": null, "asOf": null },
+      "workPackages": [
+        { "code": "WP-A", "title": { "en": "MSN Upgrade, ATC SMC Upgrade, Tram SDH and BTN, OT SOC Cybersecurity", "ar": "تحديث MSN، تحديث ATC SMC، شبكة الترام SDH وBTN، الأمن السيبراني التشغيلي" }, "valueAed": null },
+        { "code": "WP-B", "title": { "en": "33kV cable failure and performance evaluation study", "ar": "دراسة أعطال كابلات 33 ك.ف وتقييم الأداء" }, "valueAed": 935000 }
+      ],
+      "milestones": [],
+      "risks": [
+        { "id": "r1", "title": { "en": "Consultancy outputs must stay aligned with ATC SMC certifier duties to avoid conflict of role", "ar": "يجب أن تبقى مخرجات الاستشارات متوافقة مع مهام المصدّق المستقل لتفادي تعارض الأدوار" }, "rating": "medium" }
+      ],
+      "attention": [
+        { "id": "a1", "type": "info", "title": { "en": "Commencement date and 36-month end date to be confirmed from contract", "ar": "تأكيد تاريخ المباشرة وتاريخ الانتهاء بعد 36 شهراً من العقد" }, "due": null, "status": "open", "confidence": "tbc" }
+      ],
+      "sources": ["RA/RM/25-13910", "RMD technical reference: Dubai Metro key contracts"],
+      "confidence": "verified",
+      "notes": "Duration 36 months. SENER acts as Independent Certifier on ATC SMC Upgrade from 5 Nov 2025."
+    },
+    {
+      "id": "btn-sdh-migration",
+      "kind": "project",
+      "code": "RA/RM/24-10207",
+      "name": { "en": "BTN to SDH Migration (Dubai Tram)", "ar": "ترحيل شبكة الترام BTN إلى SDH" },
+      "asset": "tram",
+      "category": "telecom",
+      "stage": "execution",
+      "contractor": null,
+      "consultant": null,
+      "valueAed": null,
+      "spentAed": null,
+      "ntp": null,
+      "completion": null,
+      "dlpEnd": null,
+      "progress": { "planned": null, "actual": null, "asOf": null },
+      "milestones": [],
+      "risks": [
+        { "id": "r1", "title": { "en": "Communications backbone cut-over affects CITIS subsystems; cut-over windows must be planned with operator", "ar": "تحويل العمود الفقري للاتصالات يؤثر على أنظمة CITIS؛ يجب التخطيط لنوافذ التحويل مع المشغل" }, "rating": "medium" }
+      ],
+      "attention": [
+        { "id": "a1", "type": "waiting", "title": { "en": "Milestone status vs. contract programme to be reported in AEC monthly report", "ar": "حالة المعالم مقابل برنامج العقد في تقرير AEC الشهري" }, "owner": "AEC Consortium", "due": null, "status": "open", "confidence": "tbc" }
+      ],
+      "sources": ["RA/RM/24-10207", "RMD monthly report review checklist 3.4"],
+      "confidence": "tbc",
+      "notes": "Contractor, value and dates not on file in this register."
+    },
+    {
+      "id": "odas-implementation",
+      "kind": "project",
+      "code": "RA/RM/25-13855",
+      "name": { "en": "ODAS Implementation (Dubai Tram)", "ar": "تنفيذ نظام ODAS (ترام دبي)" },
+      "asset": "tram",
+      "category": "signalling",
+      "stage": "execution",
+      "contractor": null,
+      "consultant": null,
+      "valueAed": null,
+      "spentAed": null,
+      "ntp": null,
+      "completion": null,
+      "dlpEnd": null,
+      "progress": { "planned": null, "actual": null, "asOf": null },
+      "milestones": [],
+      "risks": [
+        { "id": "r1", "title": { "en": "False positives: most robust TCMS software REX version must be confirmed before fleet rollout", "ar": "الإنذارات الكاذبة: تأكيد أكثر إصدارات برمجيات TCMS استقراراً قبل التعميم على الأسطول" }, "rating": "high" }
+      ],
+      "attention": [
+        { "id": "a1", "type": "waiting", "title": { "en": "False positive reduction strategy and REX version confirmation", "ar": "استراتيجية تقليل الإنذارات الكاذبة وتأكيد إصدار REX" }, "owner": "AEC Consortium", "due": null, "status": "open", "confidence": "tbc" }
+      ],
+      "sources": ["RA/RM/25-13855", "RMD monthly report review checklist 3.4"],
+      "confidence": "tbc",
+      "notes": "Contractor, value and dates not on file in this register."
+    },
+    {
+      "id": "msn-upgrade",
+      "kind": "project",
+      "code": null,
+      "name": { "en": "MSN Upgrade (Dubai Metro, Legacy VOBC obsolescence)", "ar": "تحديث MSN (مترو دبي، تقادم وحدات VOBC القديمة)" },
+      "asset": "metro",
+      "category": "signalling",
+      "stage": "planning",
+      "contractor": null,
+      "consultant": "SENER (WP-A scope under RA/RM/25-13910)",
+      "valueAed": null,
+      "spentAed": null,
+      "ntp": null,
+      "completion": null,
+      "dlpEnd": null,
+      "progress": { "planned": null, "actual": null, "asOf": null },
+      "milestones": [],
+      "risks": [
+        { "id": "r1", "title": { "en": "158 Legacy VOBC units classified SCIL; OEM end of support drives replacement priority", "ar": "158 وحدة VOBC قديمة مصنفة SCIL؛ انتهاء دعم المصنّع يحدد أولوية الاستبدال" }, "rating": "high" }
+      ],
+      "attention": [
+        { "id": "a1", "type": "decision", "title": { "en": "Approve procurement route and budget year for MSN Upgrade", "ar": "اعتماد مسار الشراء وسنة الميزانية لتحديث MSN" }, "owner": "RMD Director", "due": null, "status": "open", "confidence": "tbc" }
+      ],
+      "sources": ["Keolis-MHI Consolidated Critical Items List DM001-ENM-ALL-MI-04961_A2", "RA/RM/25-13910 WP-A scope"],
+      "confidence": "tbc",
+      "notes": "Programme stage. Contract reference not yet assigned in this register."
+    },
+    {
+      "id": "asset-criticality-consultancy",
+      "kind": "project",
+      "code": "SCG/AM/25-14307",
+      "name": { "en": "Asset Criticality Consultancy (AtkinsRéalis)", "ar": "استشارات حرجية الأصول (AtkinsRéalis)" },
+      "asset": "both",
+      "category": "asset-management",
+      "stage": "execution",
+      "contractor": null,
+      "consultant": "AtkinsRéalis",
+      "valueAed": null,
+      "spentAed": null,
+      "ntp": null,
+      "completion": null,
+      "dlpEnd": null,
+      "progress": { "planned": null, "actual": null, "asOf": null },
+      "milestones": [],
+      "risks": [],
+      "attention": [],
+      "sources": ["SCG/AM/25-14307"],
+      "confidence": "tbc",
+      "notes": "Method A criticality approach (136 asset types, 61 SCIL) confirmed by RMD as industry standard."
+    },
+    {
+      "id": "st05-enhancement-maintenance",
+      "kind": "contract",
+      "code": "RA/RM/24-10212-ST05",
+      "name": { "en": "ST05 Enhancement Maintenance Contract (Dubai Tram)", "ar": "عقد صيانة تحسينات المحطة ST05 (ترام دبي)" },
+      "asset": "tram",
+      "category": "maintenance",
+      "stage": "execution",
+      "contractor": null,
+      "consultant": null,
+      "valueAed": null,
+      "spentAed": null,
+      "ntp": "2025-03-01",
+      "completion": "2027-11-30",
+      "dlpEnd": null,
+      "progress": { "planned": null, "actual": null, "asOf": null },
+      "milestones": [],
+      "risks": [],
+      "attention": [],
+      "sources": ["RA/RM/24-10212-ST05"],
+      "confidence": "verified",
+      "notes": "Legacy station PM and inline maintenance. Dates known to month precision (Mar 2025 to Nov 2027)."
+    },
+    {
+      "id": "tram-misc-service-maintenance",
+      "kind": "contract",
+      "code": "RA/RM/23-6863",
+      "name": { "en": "Dubai Tram Miscellaneous Service Maintenance", "ar": "عقد صيانة الخدمات المتنوعة لترام دبي" },
+      "asset": "tram",
+      "category": "maintenance",
+      "stage": "execution",
+      "contractor": null,
+      "consultant": null,
+      "valueAed": null,
+      "spentAed": null,
+      "ntp": "2023-11-01",
+      "completion": "2026-11-30",
+      "dlpEnd": null,
+      "progress": { "planned": null, "actual": null, "asOf": null },
+      "milestones": [],
+      "risks": [
+        { "id": "r1", "title": { "en": "Service continuity for footbridge, sewage and horticulture if the successor contract is not in place by expiry", "ar": "استمرارية خدمات الجسور والصرف والزراعة إذا لم يكن العقد اللاحق جاهزاً عند الانتهاء" }, "rating": "high" }
+      ],
+      "attention": [
+        { "id": "a1", "type": "decision", "title": { "en": "Decide renewal, extension or retender before contract end (Nov 2026)", "ar": "اتخاذ قرار التجديد أو التمديد أو إعادة الطرح قبل انتهاء العقد (نوفمبر 2026)" }, "owner": "RMD Director", "due": "2026-09-30", "reference": "RA/RM/23-6863", "status": "open", "confidence": "tbc" }
+      ],
+      "sources": ["RA/RM/23-6863"],
+      "confidence": "verified",
+      "notes": "Footbridge, sewage and horticulture. Dates known to month precision (Nov 2023 to Nov 2026). Decision due date is a proposed internal target, not a contractual date."
+    },
+    {
+      "id": "tram-maintenance-agreement",
+      "kind": "contract",
+      "code": "Al Sufouh Transit System Maintenance Agreement",
+      "name": { "en": "Dubai Tram Maintenance Agreement (AEC Consortium)", "ar": "اتفاقية صيانة ترام دبي (ائتلاف AEC)" },
+      "asset": "tram",
+      "category": "maintenance",
+      "stage": "execution",
+      "contractor": "AEC Consortium (Alstom + Engie Cofely), Loic Genot",
+      "consultant": "SENER Mobility",
+      "valueAed": null,
+      "spentAed": null,
+      "ntp": "2014-11-01",
+      "completion": null,
+      "dlpEnd": null,
+      "progress": { "planned": null, "actual": null, "asOf": null },
+      "milestones": [],
+      "risks": [
+        { "id": "r1", "title": { "en": "TVM screen-freeze events (174/month) excluded under EFT DLP; permanent fix from Conduent still outstanding", "ar": "أحداث تجمد شاشات أجهزة التذاكر (174 شهرياً) مستثناة بموجب EFT DLP؛ الحل الدائم من Conduent لا يزال معلقاً" }, "rating": "medium" },
+        { "id": "r2", "title": { "en": "Non-core DLP ageing work orders exceed 600; closure plan for top 20 by risk requested", "ar": "أوامر العمل المتقادمة غير الأساسية تتجاوز 600؛ مطلوب خطة إغلاق لأعلى 20 حسب المخاطر" }, "rating": "medium" }
+      ],
+      "attention": [
+        { "id": "a1", "type": "decision", "title": { "en": "RTA position on PMPC and TVMR KPI limits (AEC proposal ACB-LETTER-001429 vs. RTA-LETTER-005436)", "ar": "موقف الهيئة من حدود مؤشري PMPC وTVMR (مقترح AEC رقم ACB-LETTER-001429 مقابل RTA-LETTER-005436)" }, "owner": "RMD Director", "due": null, "reference": "ACB-LETTER-001429 / RTA-LETTER-005436", "status": "open", "confidence": "tbc" },
+        { "id": "a2", "type": "waiting", "title": { "en": "Conduent permanent fix for TVM screen-freeze after EFT upgrade", "ar": "الحل الدائم من Conduent لتجمد شاشات أجهزة التذاكر بعد تحديث EFT" }, "owner": "AEC Consortium / Conduent", "due": null, "reference": "ACB-LETTER-001148", "status": "open", "confidence": "tbc" },
+        { "id": "a3", "type": "waiting", "title": { "en": "OEM reports on bogie overhaul interval extension (650K to 750K km) and traction motor assessment, expected Mar 2026", "ar": "تقارير المصنّع بشأن تمديد فترة إصلاح البوجي (650 إلى 750 ألف كم) وتقييم محركات الجر، المتوقعة مارس 2026" }, "owner": "AEC Consortium / Alstom", "due": "2026-03-31", "status": "open", "confidence": "tbc", "note": "Receipt to be confirmed; if received, close this item and record the decision." }
+      ],
+      "sources": ["Al Sufouh Transit System Maintenance Agreement, Schedule 8", "RTA-LETTER-005426", "ACB-LETTER-001148", "ACB-LETTER-001429", "RTA-LETTER-005436"],
+      "confidence": "verified",
+      "notes": "Operations start Nov 2014. KPI limits per RTA-LETTER-005426 remain binding until superseded in writing."
+    },
+    {
+      "id": "metro-om-agreement",
+      "kind": "contract",
+      "code": "Dubai Metro O&M Agreement",
+      "name": { "en": "Dubai Metro Operations and Maintenance Agreement (Keolis-MHI)", "ar": "اتفاقية تشغيل وصيانة مترو دبي (Keolis-MHI)" },
+      "asset": "metro",
+      "category": "maintenance",
+      "stage": "execution",
+      "contractor": "Keolis-MHI",
+      "consultant": null,
+      "valueAed": null,
+      "spentAed": null,
+      "ntp": null,
+      "completion": null,
+      "dlpEnd": null,
+      "progress": { "planned": null, "actual": null, "asOf": null },
+      "milestones": [],
+      "risks": [
+        { "id": "r1", "title": { "en": "Original Red Line fleet (2009) approaching 17 years; refurbishment programme critical", "ar": "أسطول الخط الأحمر الأصلي (2009) يقترب من 17 عاماً؛ برنامج التجديد حرج" }, "rating": "high" }
+      ],
+      "attention": [
+        { "id": "a1", "type": "waiting", "title": { "en": "SIG MTTR targets missing from monthly KPI report (raised Mar/Apr 2024, still open)", "ar": "أهداف MTTR لنظام الإشارات غير مدرجة في تقرير المؤشرات الشهري (أثيرت مارس/أبريل 2024 ولا تزال مفتوحة)" }, "owner": "Keolis-MHI", "due": "2024-04-30", "status": "open", "confidence": "tbc" },
+        { "id": "a2", "type": "waiting", "title": { "en": "Integrated Obsolescence Management Plan: response to 6-row RMD comment table", "ar": "خطة إدارة التقادم المتكاملة: الرد على جدول ملاحظات الإدارة (6 بنود)" }, "owner": "Keolis-MHI", "due": null, "reference": "DM001-OPE-ALL-RP-05176 A1", "status": "open", "confidence": "tbc" }
+      ],
+      "sources": ["Dubai Metro Operations and Maintenance Agreement", "DM001-OPE-ALL-RP-05045", "DM001-OPE-ALL-RP-05176 A1"],
+      "confidence": "verified"
+    },
+    {
+      "id": "solar-pv-dp3",
+      "kind": "project",
+      "code": null,
+      "name": { "en": "Solar PV at DP3 (Dubai Tram)", "ar": "الطاقة الشمسية الكهروضوئية في DP3 (ترام دبي)" },
+      "asset": "tram",
+      "category": "energy",
+      "stage": "closing",
+      "contractor": "AEC Consortium",
+      "consultant": null,
+      "valueAed": null,
+      "spentAed": null,
+      "ntp": null,
+      "completion": null,
+      "dlpEnd": null,
+      "progress": { "planned": null, "actual": null, "asOf": null },
+      "milestones": [
+        { "id": "poc", "title": { "en": "POC 1 to 3 commissioned", "ar": "تشغيل المراحل التجريبية 1 إلى 3" }, "planned": null, "actual": null, "status": "done" },
+        { "id": "closing", "title": { "en": "Project closing documents", "ar": "وثائق إغلاق المشروع" }, "planned": null, "status": "open" }
+      ],
+      "risks": [],
+      "attention": [
+        { "id": "a1", "type": "waiting", "title": { "en": "Project closing documents and energy monitoring report", "ar": "وثائق إغلاق المشروع وتقرير مراقبة الطاقة" }, "owner": "AEC Consortium", "due": null, "status": "open", "confidence": "tbc" }
+      ],
+      "sources": ["RMD technical reference: key technical decisions and precedents"],
+      "confidence": "tbc"
+    },
+    {
+      "id": "cs465-viaduct-assessment",
+      "kind": "project",
+      "code": null,
+      "name": { "en": "CS465 Viaduct Post-Tensioning Structural Assessment (Simco)", "ar": "التقييم الإنشائي للشد اللاحق لجسر الترام CS465 (Simco)" },
+      "asset": "tram",
+      "category": "civil",
+      "stage": "execution",
+      "contractor": null,
+      "consultant": "Simco",
+      "valueAed": null,
+      "spentAed": null,
+      "ntp": null,
+      "completion": null,
+      "dlpEnd": null,
+      "progress": { "planned": null, "actual": null, "asOf": null },
+      "milestones": [],
+      "risks": [
+        { "id": "r1", "title": { "en": "First post-tensioning assessment for the Dubai Tram viaduct; findings may trigger unplanned structural works", "ar": "أول تقييم للشد اللاحق لجسر الترام؛ قد تؤدي النتائج إلى أعمال إنشائية غير مخططة" }, "rating": "medium" }
+      ],
+      "attention": [
+        { "id": "a1", "type": "waiting", "title": { "en": "Risk review programme and progress vs. programme", "ar": "برنامج مراجعة المخاطر والتقدم مقابل البرنامج" }, "owner": "AEC Consortium / Simco", "due": null, "status": "open", "confidence": "tbc" }
+      ],
+      "sources": ["RMD monthly report review checklist 3.8"],
+      "confidence": "tbc"
+    },
+    {
+      "id": "viaduct-bearing-review",
+      "kind": "project",
+      "code": null,
+      "name": { "en": "Viaduct Bearing Third-Party Review (Freyssinet)", "ar": "مراجعة الطرف الثالث لمساند الجسر (Freyssinet)" },
+      "asset": "tram",
+      "category": "civil",
+      "stage": "execution",
+      "contractor": null,
+      "consultant": "Freyssinet",
+      "valueAed": null,
+      "spentAed": null,
+      "ntp": null,
+      "completion": null,
+      "dlpEnd": null,
+      "progress": { "planned": null, "actual": null, "asOf": null },
+      "milestones": [],
+      "risks": [],
+      "attention": [
+        { "id": "a1", "type": "waiting", "title": { "en": "Target completion date for bearing review, to close before next inspection cycle", "ar": "تاريخ الإنجاز المستهدف لمراجعة المساند، قبل دورة الفحص القادمة" }, "owner": "AEC Consortium", "due": null, "status": "open", "confidence": "tbc" }
+      ],
+      "sources": ["RMD monthly report review checklist 3.8 and 6.6"],
+      "confidence": "tbc"
+    },
+    {
+      "id": "anti-trespass-kerbline",
+      "kind": "project",
+      "code": null,
+      "name": { "en": "Anti-Trespass Kerbline (JN412 approved, JN416 ongoing)", "ar": "حواف منع التعدي على المسار (JN412 معتمد، JN416 قيد التنفيذ)" },
+      "asset": "tram",
+      "category": "civil",
+      "stage": "execution",
+      "contractor": null,
+      "consultant": null,
+      "valueAed": null,
+      "spentAed": null,
+      "ntp": null,
+      "completion": null,
+      "dlpEnd": null,
+      "progress": { "planned": null, "actual": null, "asOf": null },
+      "milestones": [
+        { "id": "jn412", "title": { "en": "JN412 design approved by RTA", "ar": "اعتماد تصميم JN412" }, "planned": null, "actual": null, "status": "done" },
+        { "id": "jn416", "title": { "en": "JN416 implementation", "ar": "تنفيذ JN416" }, "planned": null, "status": "open" }
+      ],
+      "risks": [],
+      "attention": [
+        { "id": "a1", "type": "decision", "title": { "en": "Approve replication of the RTA-approved kerbline design at remaining junctions", "ar": "اعتماد تكرار التصميم المعتمد عند التقاطعات المتبقية" }, "owner": "RMD Director", "due": null, "status": "open", "confidence": "tbc" }
+      ],
+      "sources": ["RMD technical reference: key technical decisions and precedents"],
+      "confidence": "tbc"
+    }
+  ]
+}
