@@ -112,3 +112,9 @@ Open items in the seed are taken from the RMD review checklists and
 precedents and are all marked to be confirmed. Their due dates, where set,
 are internal targets or the month an issue was first raised, not contractual
 dates.
+
+## Brand colours
+
+The UI uses RTA identity tokens defined once at the top of `src/styles.css`: `--rta-red`, `--rta-red-deep`, `--rta-navy`, `--rta-charcoal`, `--rta-grey`, plus `--metro-red`, `--metro-green` and `--tram-teal` for asset badges. The values approximate the public RTA logo and Dubai Metro line colours; the official codes could not be retrieved from the RTA site or the Corporate Identity Manual in the build environment. Replace the hex values in that block with the manual's codes and every component follows, in light, dark and print.
+
+Semantic colours are separate from the brand: red means overdue or delayed, amber at risk, green on track, navy a decision, slate waiting. RTA red is reserved for the brand band, primary buttons and section rules so status colours stay unambiguous.

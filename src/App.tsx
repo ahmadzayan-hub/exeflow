@@ -78,7 +78,9 @@ export function App() {
 
   return (
     <div className="app">
-      <Header
+      <div className="brandbar">
+        <div className="page">
+          <Header
         portfolio={portfolio}
         lang={lang}
         onLang={() => setLang(lang === "en" ? "ar" : "en")}
@@ -86,7 +88,20 @@ export function App() {
         onExport={onExport}
         onDemo={() => replacePortfolio(buildDemo(seed), true)}
         onReset={() => replacePortfolio(seed, false)}
-      />
+          />
+        </div>
+      </div>
+      <nav className="views no-print" aria-label="views">
+        <div className="page">
+          <button type="button" className={`view-btn ${view === "portfolio" ? "active" : ""}`} onClick={() => setView("portfolio")}>
+            {t("navPortfolio", lang)}
+          </button>
+          <button type="button" className={`view-btn ${view === "reporting" ? "active" : ""}`} onClick={() => setView("reporting")}>
+            {t("navReporting", lang)}
+          </button>
+        </div>
+      </nav>
+      <div className="page">
       {view === "portfolio" && (
         <div className={`banner banner-${portfolio.dataset}`} role="note">
           <strong>{t(portfolio.dataset, lang)}:</strong> {bi(portfolio.disclaimer, lang)}
@@ -97,15 +112,6 @@ export function App() {
           {error}
         </div>
       )}
-
-      <nav className="views no-print" aria-label="views">
-        <button type="button" className={`view-btn ${view === "portfolio" ? "active" : ""}`} onClick={() => setView("portfolio")}>
-          {t("navPortfolio", lang)}
-        </button>
-        <button type="button" className={`view-btn ${view === "reporting" ? "active" : ""}`} onClick={() => setView("reporting")}>
-          {t("navReporting", lang)}
-        </button>
-      </nav>
 
       {view === "reporting" ? (
         <main>
@@ -142,6 +148,7 @@ export function App() {
       )}
 
       <footer className="footer">{t("footer", lang)}</footer>
+      </div>
 
       {selected && <ProjectDetail project={selected} today={today} lang={lang} onClose={closeDetail} />}
     </div>
