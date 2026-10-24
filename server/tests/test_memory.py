@@ -3,13 +3,13 @@ from execflow.memory import Memory
 
 def test_remember_recall_forget():
     m = Memory()
-    a = m.remember("definition", "TSA (Train Service Availability) target is 99% with a 94% cap, per RTA-LETTER-005426")
+    a = m.remember("definition", "Train service availability target is 99% under the maintenance agreement")
     m.remember("finding", "Signalling failures rose from 12 to 15 between May and June 2026", source="run-1")
     hits = m.recall("signalling failures june")
     assert hits and hits[0]["kind"] == "finding"
-    assert m.recall("TSA availability")[0]["id"] == a["id"]
+    assert m.recall("service availability")[0]["id"] == a["id"]
     assert m.forget(a["id"])
-    assert all(h["id"] != a["id"] for h in m.recall("TSA availability"))
+    assert all(h["id"] != a["id"] for h in m.recall("service availability"))
 
 
 def test_runs_and_export():

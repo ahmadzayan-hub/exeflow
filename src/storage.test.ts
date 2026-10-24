@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { isPortfolio } from "./storage";
-import seed from "./data/portfolio.json";
+import { buildShowcase } from "./data/showcase";
+
+const seed = buildShowcase(new Date("2026-10-23T00:00:00Z"));
 
 describe("isPortfolio", () => {
-  it("accepts the seed register", () => {
+  it("accepts the showcase portfolio", () => {
     expect(isPortfolio(seed)).toBe(true);
   });
   it("rejects a shallow file that would crash the metrics engine", () => {

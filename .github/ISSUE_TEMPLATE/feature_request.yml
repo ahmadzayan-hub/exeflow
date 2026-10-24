@@ -1,0 +1,20 @@
+name: Feature request
+description: Suggest an improvement for directors and their teams
+labels: [enhancement]
+body:
+  - type: textarea
+    id: job
+    attributes:
+      label: The job to be done
+      description: Who needs this, in what situation, and what do they do today?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you would like to see
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [Decisions and commitments, Timeline, Weekly brief, Reporting and analytics, Arabic and right-to-left, Hermes integration, Deployment, Documentation]

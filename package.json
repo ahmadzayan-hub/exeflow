@@ -1,23 +1,28 @@
 {
   "name": "exeflow-rmd-dashboard",
   "private": true,
-  "version": "0.1.0",
-  "description": "RMD Projects Executive Dashboard (ExecFlow)",
+  "version": "0.2.0",
+  "description": "ExecFlow: executive decisions, commitments and verified management reports",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build && node scripts/single-file.mjs",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build:web": "tsc --noEmit && vite build",
+    "build:private": "node scripts/build-private.mjs",
+    "test:all": "vitest run"
   },
   "dependencies": {
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "read-excel-file": "^9.3.12"
   },
   "devDependencies": {
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.3",
+    "@types/node": "^26.6.5",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
     "@vitejs/plugin-react": "^4.7.0",

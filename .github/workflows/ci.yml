@@ -1,26 +1,42 @@
 name: CI
 on:
   push:
-    branches: ["**"]
+    branches: [main, "claude/**"]
   pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  build:
+  web:
+    name: Web (typecheck, test, build)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
       - run: npm ci
       - run: npm test
       - run: npm run build
+      - name: Public bundle must not contain private data
+        run: |
+          if grep -rIl -E "RA/RM|RTA-LETTER|ACB-LETTER" dist; then echo "private reference found in public bundle"; exit 1; fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rmd-dashboard-offline
+          path: release/rmd-dashboard.html
+  service:
+    name: Python service
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: server/pyproject.toml
       - run: pip install -e "./server[dev]"
       - run: cd server && python -m pytest -q
-      - uses: actions/upload-artifact@v4
-        with:
-          name: rmd-dashboard
-          path: dist/rmd-dashboard.html

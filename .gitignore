@@ -9,3 +9,8 @@ server/**/__pycache__/
 server/*.egg-info/
 server/.pytest_cache/
 .env
+
+# Private register stays on the machine. Public builds ship fictional showcase data only.
+data/private/
+*.private.json
+release/

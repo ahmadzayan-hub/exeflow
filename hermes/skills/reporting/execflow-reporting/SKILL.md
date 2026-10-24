@@ -37,7 +37,7 @@ All commands use the helper script. Replace the path with the file the user gave
     python ${HERMES_SKILL_DIR}/scripts/execflow.py analyse <dataset_id> --lang en --question "..."
     python ${HERMES_SKILL_DIR}/scripts/execflow.py report <run_id>
     python ${HERMES_SKILL_DIR}/scripts/execflow.py memory list
-    python ${HERMES_SKILL_DIR}/scripts/execflow.py memory add definition "TSA target is 99% with a 94% cap per RTA-LETTER-005426"
+    python ${HERMES_SKILL_DIR}/scripts/execflow.py memory add definition "Availability target is 99% under the maintenance agreement"
 
 ## Procedure
 

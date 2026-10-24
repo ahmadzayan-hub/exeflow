@@ -1,6 +1,6 @@
-// Inlines the Vite build into one HTML file: dist/rmd-dashboard.html
+// Inlines the Vite build into one HTML file: release/rmd-dashboard.html
 // so the dashboard can be opened from a phone or emailed without a server.
-import { readFileSync, writeFileSync, readdirSync } from "node:fs";
+import { readFileSync, writeFileSync, readdirSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -26,5 +26,7 @@ if (/assets\//.test(html)) {
   console.error("single-file: unresolved asset references remain");
   process.exit(1);
 }
-writeFileSync(join(dist, "rmd-dashboard.html"), html);
-console.log(`single-file: wrote dist/rmd-dashboard.html (${(html.length / 1024).toFixed(0)} KB)`);
+const release = fileURLToPath(new URL("../release/", import.meta.url));
+mkdirSync(release, { recursive: true });
+writeFileSync(join(release, "rmd-dashboard.html"), html);
+console.log(`single-file: wrote release/rmd-dashboard.html (${(html.length / 1024).toFixed(0)} KB)`);

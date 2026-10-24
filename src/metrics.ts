@@ -1,5 +1,7 @@
 import type { AttentionItem, Milestone, Portfolio, Project, Rag } from "./types";
 
+export const INBOX_ID = "__inbox";
+
 export const DAY_MS = 86_400_000;
 
 export function parseDate(iso: string | null | undefined): Date | null {
@@ -205,8 +207,32 @@ export interface PortfolioSummary {
   expiringIn90: number;
 }
 
-export function summarise(portfolio: Portfolio, today: Date): PortfolioSummary {
-  const { start, end } = reportingWindow(portfolio);
+/** The director inbox behaves like a project for attention purposes but never appears in the grid or the counts of projects. */
+export function inboxProject(items: AttentionItem[]): Project {
+  return {
+    id: INBOX_ID,
+    kind: "project",
+    code: null,
+    name: { en: "Director inbox", ar: "وارد المدير" },
+    asset: "both",
+    category: "asset-management",
+    stage: "execution",
+    progress: { planned: null, actual: null },
+    milestones: [],
+    risks: [],
+    attention: items,
+    sources: [],
+    confidence: "verified",
+  };
+}
+
+export function attentionProjects(portfolio: Portfolio): Project[] {
+  const inbox = portfolio.inbox ?? [];
+  return inbox.length ? [...portfolio.projects, inboxProject(inbox)] : portfolio.projects;
+}
+
+export function summarise(portfolio: Portfolio, today: Date, window?: { start: Date; end: Date }): PortfolioSummary {
+  const { start, end } = window ?? reportingWindow(portfolio);
   const rag: Record<Rag, number> = { green: 0, amber: 0, red: 0, grey: 0 };
   const s: PortfolioSummary = {
     projects: 0,
@@ -222,12 +248,16 @@ export function summarise(portfolio: Portfolio, today: Date): PortfolioSummary {
     expiringIn90: 0,
   };
 
-  for (const p of portfolio.projects) {
-    if (p.kind === "contract") s.contracts++;
-    else s.projects++;
-    if (p.valueAed != null) s.knownValueAed += p.valueAed;
-    else s.valueUnknown++;
-    rag[scheduleRag(p, today)]++;
+  for (const p of attentionProjects(portfolio)) {
+    const real = p.id !== INBOX_ID;
+    if (real) {
+      if (p.kind === "contract") s.contracts++;
+      else s.projects++;
+      if (p.valueAed != null) s.knownValueAed += p.valueAed;
+      else s.valueUnknown++;
+      rag[scheduleRag(p, today)]++;
+      s.dueIn30 += upcomingMilestones(p, today, 30).length;
+    }
     const b = attentionBuckets(p, today);
     s.needsDecision += needsDecisionCount(b);
     s.waiting += b.waiting.length;
@@ -237,7 +267,6 @@ export function summarise(portfolio: Portfolio, today: Date): PortfolioSummary {
       const closed = parseDate(a.closedOn);
       if (a.status === "closed" && closed && closed >= start && closed <= end) s.closedThisPeriod++;
     }
-    s.dueIn30 += upcomingMilestones(p, today, 30).length;
   }
   return s;
 }

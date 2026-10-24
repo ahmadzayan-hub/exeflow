@@ -23,6 +23,8 @@ export type Rag = "green" | "amber" | "red" | "grey";
 export type Confidence = "verified" | "tbc" | "illustrative";
 export type MilestoneStatus = "done" | "open" | "at-risk";
 export type AttentionType = "decision" | "waiting" | "overdue" | "info";
+export type Priority = "high" | "normal";
+export type DatasetKind = "seed" | "demo" | "showcase" | "working" | "imported";
 export type RiskRating = "high" | "medium" | "low";
 
 export interface Bilingual {
@@ -62,6 +64,10 @@ export interface AttentionItem {
   reference?: string;
   status: "open" | "closed";
   closedOn?: string | null;
+  createdOn?: string | null;
+  priority?: Priority;
+  /** original dictated or typed text when the item came from quick capture */
+  capturedFrom?: string;
   note?: string;
   confidence?: Confidence;
 }
@@ -101,7 +107,11 @@ export interface Portfolio {
   schemaVersion: 1;
   title: Bilingual;
   organisation: Bilingual;
-  dataset: "seed" | "demo" | "imported";
+  dataset: DatasetKind;
+  /** which base the working copy was started from */
+  base?: "seed" | "showcase" | "imported";
+  /** items captured without a project: the director's inbox */
+  inbox?: AttentionItem[];
   reportingPeriod: { label: Bilingual; asOf: string; start?: string | null; end?: string | null };
   disclaimer: Bilingual;
   projects: Project[];

@@ -1,6 +1,6 @@
 import type { Portfolio, Project } from "./types";
 
-const KEY = "exeflow.rmd.portfolio";
+const keyFor = (dataset: string) => `exeflow.rmd.portfolio.${dataset}`;
 const LANG_KEY = "exeflow.rmd.lang";
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
@@ -20,7 +20,12 @@ export function isPortfolio(v: unknown): v is Portfolio {
   if (!isObj(rp) || typeof rp.asOf !== "string" || !isBilingual(rp.label)) return false;
   if (!isStrOrNull(rp.start) || !isStrOrNull(rp.end)) return false;
   if (!Array.isArray(v.projects)) return false;
+  if (v.inbox != null && !(Array.isArray(v.inbox) && v.inbox.every(isAttention))) return false;
   return v.projects.every(isProject);
+}
+
+function isAttention(a: unknown): boolean {
+  return isObj(a) && typeof a.id === "string" && isBilingual(a.title) && typeof a.type === "string" && typeof a.status === "string" && isStrOrNull(a.due) && isStrOrNull(a.closedOn);
 }
 
 function isProject(v: unknown): v is Project {
@@ -35,14 +40,15 @@ function isProject(v: unknown): v is Project {
   if (v.workPackages != null && !Array.isArray(v.workPackages)) return false;
   if (!v.milestones.every((m) => isObj(m) && typeof m.id === "string" && isBilingual(m.title) && isStrOrNull(m.planned) && isStrOrNull(m.actual) && typeof m.status === "string")) return false;
   if (!v.risks.every((r) => isObj(r) && typeof r.id === "string" && isBilingual(r.title) && typeof r.rating === "string")) return false;
-  if (!v.attention.every((a) => isObj(a) && typeof a.id === "string" && isBilingual(a.title) && typeof a.type === "string" && typeof a.status === "string" && isStrOrNull(a.due) && isStrOrNull(a.closedOn))) return false;
+  if (!v.attention.every(isAttention)) return false;
   if (!v.sources.every((x) => typeof x === "string")) return false;
   if (v.workPackages && !v.workPackages.every((w) => isObj(w) && typeof w.code === "string" && isBilingual(w.title) && isNumOrNull(w.valueAed))) return false;
   const ids = v.attention.map((a) => (a as { id: string }).id);
   return new Set(ids).size === ids.length;
 }
 
-export function loadPortfolio(): Portfolio | null {
+export function loadPortfolio(dataset: string): Portfolio | null {
+  const KEY = keyFor(dataset);
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
@@ -55,7 +61,8 @@ export function loadPortfolio(): Portfolio | null {
   }
 }
 
-export function savePortfolio(p: Portfolio | null): void {
+export function savePortfolio(dataset: string, p: Portfolio | null): void {
+  const KEY = keyFor(dataset);
   try {
     if (p) localStorage.setItem(KEY, JSON.stringify(p));
     else localStorage.removeItem(KEY);
@@ -75,6 +82,26 @@ export function loadLang(): "en" | "ar" {
 export function saveLang(lang: "en" | "ar"): void {
   try {
     localStorage.setItem(LANG_KEY, lang);
+  } catch {
+    /* ignore */
+  }
+}
+
+const THEME_KEY = "exeflow.theme";
+export type ThemeChoice = "system" | "light" | "dark";
+
+export function loadTheme(): ThemeChoice {
+  try {
+    const v = localStorage.getItem(THEME_KEY);
+    return v === "light" || v === "dark" ? v : "system";
+  } catch {
+    return "system";
+  }
+}
+
+export function saveTheme(t: ThemeChoice): void {
+  try {
+    localStorage.setItem(THEME_KEY, t);
   } catch {
     /* ignore */
   }
