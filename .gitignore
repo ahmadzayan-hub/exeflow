@@ -4,7 +4,7 @@ dist/
 .DS_Store
 .vite/
 .venv/
-data/
+/data/
 server/**/__pycache__/
 server/*.egg-info/
 server/.pytest_cache/
