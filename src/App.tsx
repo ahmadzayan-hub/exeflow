@@ -9,6 +9,7 @@ import type { Asset, Category, Kind, Portfolio, Project, Rag, Stage } from "./ty
 import { AttentionPanel } from "./components/AttentionPanel";
 import { Filters, type FilterState, emptyFilters, applyFilters } from "./components/Filters";
 import { Header } from "./components/Header";
+import { JarvisPanel } from "./components/JarvisPanel";
 import { ProjectCard } from "./components/ProjectCard";
 import { ProjectDetail } from "./components/ProjectDetail";
 import { SummaryTiles } from "./components/SummaryTiles";
@@ -134,6 +135,7 @@ export function App() {
             stages={distinct(portfolio.projects, (p) => p.stage)}
             kinds={distinct(portfolio.projects, (p) => p.kind)}
           />
+          <JarvisPanel portfolio={portfolio} projects={visible} today={today} lang={lang} onSelect={setSelectedId} />
           {visible.length === 0 ? (
             <p className="empty">{t("noMatch", lang)}</p>
           ) : (
