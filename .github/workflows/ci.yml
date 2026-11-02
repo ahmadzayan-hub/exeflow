@@ -17,6 +17,16 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - name: Install disposable pinned browser tooling
+        env:
+          BROWSER_TOOL_ROOT: ${{ runner.temp }}/exeflow-browser
+        run: |
+          npm install --prefix "$BROWSER_TOOL_ROOT" --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.62.1
+          "$BROWSER_TOOL_ROOT/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Verify standalone bilingual synthetic portfolio
+        env:
+          BROWSER_TOOL_ROOT: ${{ runner.temp }}/exeflow-browser
+        run: node scripts/verify-jarvis-browser.mjs
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -26,3 +36,10 @@ jobs:
         with:
           name: rmd-dashboard
           path: dist/rmd-dashboard.html
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jarvis-synthetic-browser
+          path: artifacts/jarvis/*.png
+          if-no-files-found: ignore
+          retention-days: 7

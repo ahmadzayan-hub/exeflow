@@ -35,4 +35,12 @@ npm run build
 
 Before release, manually verify desktop/mobile layout, keyboard navigation and focus, Arabic RTL, reduced motion, actual local voice playback/stop in supported browsers, and the generated single-file HTML. jsdom tests cannot verify actual voice locality, audible output or visual layout.
 
+The hosted `scripts/verify-jarvis-browser.mjs` check opens the generated single-file
+HTML with a fabricated portfolio in a fresh Chromium context. It covers both
+languages at desktop/phone sizes, keyboard focus/submission, recorded evidence,
+filter scope, drawer/Escape and reduced-motion CSS. It observes the browser's
+real voice inventory and requires readback to stay disabled if no matching local
+voice exists, but never starts speech. Exact CI output and screenshot inspection
+must be recorded separately; this does not replace audible local-voice acceptance.
+
 The patch is isolated from the original checkout. Roll back this milestone by reversing its saved patch after checking for subsequent edits. No localStorage schema/key or data migration was introduced; there is no portfolio data to roll back.
