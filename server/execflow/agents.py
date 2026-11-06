@@ -193,7 +193,7 @@ def run_analysis(ds: Dataset, memory: Memory, routing: Routing, question: str | 
     run_id = memory.start_run(ds.id, question, lang)
     result = RunResult(run_id=run_id, dataset=ds.meta(), question=question, lang=lang, models={r: f"{c.provider}:{c.model}" for r, c in clients.items()})
     if routing.mock:
-        result.warnings.append("mock provider in use: set GROQ_API_KEY (or another provider key) for real analysis")
+        result.warnings.append("mock provider in use: synthetic demonstration only; cloud execution is disabled")
 
     # 1. profile + memory recall (deterministic)
     profile = profile_dataset(ds)
@@ -299,3 +299,4 @@ def _compact_profile(profile: dict) -> dict:
             cols.append(item)
         tables.append({"name": t["name"], "rows": t["row_count"], "columns": cols})
     return {"tables": tables, "text_preview": profile.get("text_preview", [])}
+

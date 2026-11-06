@@ -4,28 +4,72 @@ execflow-reporting skill). Run: uvicorn execflow.api:app --port 8000"""
 from __future__ import annotations
 
 import os
+import secrets
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from starlette._utils import get_route_path
 
 from . import __version__
 from .agents import run_analysis
+from .execution_policy import ExecutionPolicyError
 from .analytics import TOOL_SCHEMAS, run_tool
 from .ingest import SUPPORTED, ingest, list_datasets, load_dataset, save_dataset
 from .llm import load_routing
 from .memory import KINDS, Memory
 from .profile import candidate_metrics, profile_dataset
+from .upload_limits import MULTIPART_OVERHEAD_BYTES, UploadBodyLimitMiddleware
 
 DATA_ROOT = Path(os.environ.get("EXECFLOW_DATA", "data"))
 DATASETS = DATA_ROOT / "datasets"
 MAX_UPLOAD_MB = int(os.environ.get("EXECFLOW_MAX_UPLOAD_MB", "25"))
+if MAX_UPLOAD_MB <= 0:
+    raise ValueError("EXECFLOW_MAX_UPLOAD_MB must be a positive integer")
 
 app = FastAPI(title="ExecFlow analytics", version=__version__)
+# Added first so CORS and the authentication middleware wrap this body gate.
+# Unauthorized requests are rejected without consuming or spooling the body.
+app.add_middleware(UploadBodyLimitMiddleware,
+                   max_body_bytes=MAX_UPLOAD_MB * 1024 * 1024 + MULTIPART_OVERHEAD_BYTES)
 app.add_middleware(CORSMiddleware, allow_origins=os.environ.get("EXECFLOW_CORS", "http://localhost:5173").split(","), allow_methods=["*"], allow_headers=["*"])
+
+
+@app.exception_handler(ExecutionPolicyError)
+async def execution_policy_error(request: Request, error: ExecutionPolicyError):
+    return JSONResponse({"detail": str(error)}, status_code=503, headers={"Cache-Control": "no-store"})
+
+@app.middleware("http")
+async def authenticate(request: Request, call_next):
+    # Protect the entire API namespace, including future routes, before parsing
+    # uploads or invoking storage/providers. CORS preflight carries no data.
+    # Match Starlette routing for reverse proxies that mount the service under
+    # a URL prefix. Raw scope paths can include root_path and would miss /api.
+    path = get_route_path(request.scope)
+    protected = path == "/api" or path.startswith("/api/") or path in {
+        "/docs", "/docs/oauth2-redirect", "/redoc", "/openapi.json"
+    }
+    preflight = (request.method == "OPTIONS" and "origin" in request.headers
+                 and "access-control-request-method" in request.headers)
+    if protected and not preflight:
+        token = os.environ.get("EXECFLOW_API_TOKEN", "")
+        if not token or not token.strip():
+            return JSONResponse({"detail": "API authentication is not configured"},
+                                status_code=503, headers={"Cache-Control": "no-store"})
+        values = request.headers.getlist("authorization")
+        scheme, _, supplied = (values[0] if len(values) == 1 else "").partition(" ")
+        if (scheme.lower() != "bearer" or not supplied or
+                not secrets.compare_digest(supplied.encode(), token.encode())):
+            return JSONResponse({"detail": "Valid bearer token required"}, status_code=401,
+                                headers={"WWW-Authenticate": "Bearer", "Cache-Control": "no-store"})
+    response = await call_next(request)
+    if protected:
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
 
 _memory: Memory | None = None
 
@@ -71,7 +115,9 @@ def health():
 
 @app.post("/api/upload")
 async def upload(file: UploadFile = File(...), name: str | None = Form(None)):
-    data = await file.read()
+    # The request gate already bounds multipart overhead. This second cap
+    # enforces the documented file limit without an unbounded in-memory read.
+    data = await file.read(MAX_UPLOAD_MB * 1024 * 1024 + 1)
     if len(data) > MAX_UPLOAD_MB * 1024 * 1024:
         raise HTTPException(413, f"file exceeds {MAX_UPLOAD_MB} MB")
     try:
@@ -101,18 +147,20 @@ def tools():
 
 @app.post("/api/tool")
 def tool(body: ToolIn):
+    routing = load_routing()
     ds = _load(body.dataset_id)
     try:
-        return run_tool(ds, body.tool, body.args, allow_rows=load_routing().allow_rows)
+        return run_tool(ds, body.tool, body.args, allow_rows=routing.allow_rows)
     except (ValueError, KeyError, PermissionError) as e:
         raise HTTPException(400, str(e))
 
 
 @app.post("/api/analyse")
 def analyse(body: AnalyseIn):
+    routing = load_routing()
     ds = _load(body.dataset_id)
     try:
-        result = run_analysis(ds, memory(), load_routing(), body.question, body.lang)
+        result = run_analysis(ds, memory(), routing, body.question, body.lang)
     except RuntimeError as e:  # provider failure
         raise HTTPException(502, str(e))
     return result.to_dict()
@@ -168,3 +216,4 @@ def memory_md():
 _UI = Path(os.environ.get("EXECFLOW_UI_DIST", Path(__file__).resolve().parents[2] / "dist"))
 if _UI.is_dir():
     app.mount("/", StaticFiles(directory=str(_UI), html=True), name="ui")
+

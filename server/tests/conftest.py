@@ -40,3 +40,16 @@ def csv_bytes() -> bytes:
 @pytest.fixture
 def tmp_root(tmp_path: Path) -> Path:
     return tmp_path
+
+
+
+@pytest.fixture(autouse=True)
+def prohibit_live_network(monkeypatch):
+    """All tests are synthetic/offline, including any accidentally added HTTP call."""
+    import socket
+    def forbidden(*args, **kwargs):
+        raise AssertionError("Live network is prohibited in the offline test suite")
+    monkeypatch.setattr(socket.socket, "connect", forbidden)
+    monkeypatch.setattr(socket.socket, "connect_ex", forbidden)
+    monkeypatch.setattr(socket, "create_connection", forbidden)
+    monkeypatch.setattr(socket, "getaddrinfo", forbidden)

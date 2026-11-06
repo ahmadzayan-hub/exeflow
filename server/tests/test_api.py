@@ -5,12 +5,13 @@ from fastapi.testclient import TestClient
 @pytest.fixture
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("EXECFLOW_PROVIDER", "mock")
+    monkeypatch.setenv("EXECFLOW_API_TOKEN", "test-only-not-a-real-credential")
     import execflow.api as api
 
     monkeypatch.setattr(api, "DATA_ROOT", tmp_path)
     monkeypatch.setattr(api, "DATASETS", tmp_path / "datasets")
     api._memory = None
-    return TestClient(api.app)
+    return TestClient(api.app, headers={"Authorization": "Bearer test-only-not-a-real-credential"})
 
 
 def test_health_and_upload_analyse_flow(client, xlsx_bytes):
@@ -45,3 +46,4 @@ def test_health_and_upload_analyse_flow(client, xlsx_bytes):
 
 def test_upload_rejects_unknown_type(client):
     assert client.post("/api/upload", files={"file": ("x.exe", b"zz", "application/octet-stream")}).status_code == 400
+

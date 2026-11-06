@@ -76,20 +76,31 @@ async function j<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+// Deliberately memory-only: never persist credentials or bake them into Vite.
+let accessToken = "";
+export function setApiToken(token: string) { accessToken = token; }
+
+function authenticatedFetch(input: string, init: RequestInit = {}) {
+  const headers = new Headers(init.headers);
+  if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+  return fetch(input, { ...init, headers, cache: "no-store", redirect: "error" });
+}
+
 export const api = {
-  health: () => fetch(`${API_BASE}/api/health`).then((r) => j<Health>(r)),
-  datasets: () => fetch(`${API_BASE}/api/datasets`).then((r) => j<{ datasets: DatasetMeta[] }>(r)),
+  health: () => authenticatedFetch(`${API_BASE}/api/health`).then((r) => j<Health>(r)),
+  datasets: () => authenticatedFetch(`${API_BASE}/api/datasets`).then((r) => j<{ datasets: DatasetMeta[] }>(r)),
   upload: (file: File) => {
     const fd = new FormData();
     fd.append("file", file);
-    return fetch(`${API_BASE}/api/upload`, { method: "POST", body: fd }).then((r) => j<{ dataset: DatasetMeta }>(r));
+    return authenticatedFetch(`${API_BASE}/api/upload`, { method: "POST", body: fd }).then((r) => j<{ dataset: DatasetMeta }>(r));
   },
   analyse: (dataset_id: string, question: string, lang: "en" | "ar") =>
-    fetch(`${API_BASE}/api/analyse`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dataset_id, question: question || null, lang }) }).then((r) => j<RunResult>(r)),
-  runs: (dataset_id?: string) => fetch(`${API_BASE}/api/runs${dataset_id ? `?dataset_id=${dataset_id}` : ""}`).then((r) => j<{ runs: { id: string; dataset_id: string; question: string | null; lang: string; status: string; created_at: string }[] }>(r)),
-  run: (id: string) => fetch(`${API_BASE}/api/runs/${id}`).then((r) => j<{ result: RunResult }>(r)),
-  memory: () => fetch(`${API_BASE}/api/memory`).then((r) => j<{ items: MemoryItem[] }>(r)),
+    authenticatedFetch(`${API_BASE}/api/analyse`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dataset_id, question: question || null, lang }) }).then((r) => j<RunResult>(r)),
+  runs: (dataset_id?: string) => authenticatedFetch(`${API_BASE}/api/runs${dataset_id ? `?dataset_id=${dataset_id}` : ""}`).then((r) => j<{ runs: { id: string; dataset_id: string; question: string | null; lang: string; status: string; created_at: string }[] }>(r)),
+  run: (id: string) => authenticatedFetch(`${API_BASE}/api/runs/${id}`).then((r) => j<{ result: RunResult }>(r)),
+  memory: () => authenticatedFetch(`${API_BASE}/api/memory`).then((r) => j<{ items: MemoryItem[] }>(r)),
   remember: (kind: string, text: string) =>
-    fetch(`${API_BASE}/api/memory`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, text }) }).then((r) => j<MemoryItem>(r)),
-  forget: (id: string) => fetch(`${API_BASE}/api/memory/${id}`, { method: "DELETE" }).then((r) => j<{ ok: boolean }>(r)),
+    authenticatedFetch(`${API_BASE}/api/memory`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, text }) }).then((r) => j<MemoryItem>(r)),
+  forget: (id: string) => authenticatedFetch(`${API_BASE}/api/memory/${id}`, { method: "DELETE" }).then((r) => j<{ ok: boolean }>(r)),
 };
+
