@@ -15,6 +15,7 @@ from pydantic import BaseModel, Field
 
 from . import __version__
 from .agents import run_analysis
+from .execution_policy import ExecutionPolicyError
 from .analytics import TOOL_SCHEMAS, run_tool
 from .ingest import SUPPORTED, ingest, list_datasets, load_dataset, save_dataset
 from .llm import load_routing
@@ -27,6 +28,11 @@ MAX_UPLOAD_MB = int(os.environ.get("EXECFLOW_MAX_UPLOAD_MB", "25"))
 
 app = FastAPI(title="ExecFlow analytics", version=__version__)
 app.add_middleware(CORSMiddleware, allow_origins=os.environ.get("EXECFLOW_CORS", "http://localhost:5173").split(","), allow_methods=["*"], allow_headers=["*"])
+
+
+@app.exception_handler(ExecutionPolicyError)
+async def execution_policy_error(request: Request, error: ExecutionPolicyError):
+    return JSONResponse({"detail": str(error)}, status_code=503, headers={"Cache-Control": "no-store"})
 
 @app.middleware("http")
 async def authenticate(request: Request, call_next):
@@ -129,18 +135,20 @@ def tools():
 
 @app.post("/api/tool")
 def tool(body: ToolIn):
+    routing = load_routing()
     ds = _load(body.dataset_id)
     try:
-        return run_tool(ds, body.tool, body.args, allow_rows=load_routing().allow_rows)
+        return run_tool(ds, body.tool, body.args, allow_rows=routing.allow_rows)
     except (ValueError, KeyError, PermissionError) as e:
         raise HTTPException(400, str(e))
 
 
 @app.post("/api/analyse")
 def analyse(body: AnalyseIn):
+    routing = load_routing()
     ds = _load(body.dataset_id)
     try:
-        result = run_analysis(ds, memory(), load_routing(), body.question, body.lang)
+        result = run_analysis(ds, memory(), routing, body.question, body.lang)
     except RuntimeError as e:  # provider failure
         raise HTTPException(502, str(e))
     return result.to_dict()

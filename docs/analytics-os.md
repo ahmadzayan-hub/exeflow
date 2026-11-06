@@ -25,24 +25,28 @@ ExecFlow service  (FastAPI, server/execflow)
    llm.py       OpenAI-compatible client: Groq, Nous, OpenRouter, Ollama, Hermes API server, mock
 ```
 
-Model routing is per role, from the environment:
+Model routing is per role, from the environment. The default is a deterministic
+mock with no model network access. See [execution policy](execution-policy.md).
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `EXECFLOW_PROVIDER` | `groq` | Default provider for every role |
-| `EXECFLOW_MODEL_ANALYST` | `groq:openai/gpt-oss-120b` | Tool-calling analysis |
-| `EXECFLOW_MODEL_REVIEWER` | `groq:openai/gpt-oss-20b` | Verdict on each finding (after the deterministic gate) |
-| `EXECFLOW_MODEL_REPORTER` | `groq:openai/gpt-oss-120b` | Report writing (`hermes:hermes-agent` routes it through Hermes and its memory) |
-| `EXECFLOW_SEND_ROWS` | `false` | When false, only schema, profiles and aggregates reach a model |
+| `EXECFLOW_MODE` | `mock` | `mock` (offline) or `local` (loopback Ollama only) |
+| `EXECFLOW_PROVIDER` | `mock` in mock mode; `ollama` in local mode | Default for every role |
+| `EXECFLOW_MODEL_ANALYST` | Provider default | Must be mock or locally routed Ollama |
+| `EXECFLOW_MODEL_REVIEWER` | Provider default | Same policy as analyst |
+| `EXECFLOW_MODEL_REPORTER` | Provider default | Same policy as analyst; Hermes forwarding is disabled |
+| `EXECFLOW_SEND_ROWS` | `false` | Controls row access, not the network policy |
 
-Providers and their key variables: `groq` (`GROQ_API_KEY`), `nous` (`NOUS_API_KEY`, Hermes 4), `openrouter` (`OPENROUTER_API_KEY`), `ollama` (no key, `http://127.0.0.1:11434/v1`), `hermes` (`API_SERVER_KEY`, `http://127.0.0.1:8642/v1`). Any base URL can be overridden with `<PROVIDER>_BASE_URL`. With no key configured the service runs a deterministic mock and says so in the UI.
-
-Model ids were taken from Groq's published catalogue in September 2026 (gpt-oss-120b and gpt-oss-20b, both with tool use and JSON mode). Confirm current ids at console.groq.com/docs/models before the first live run; older Llama 3.x ids are deprecated there.
+Cloud providers and unsafe role overrides fail closed, with or without provider
+keys. `OLLAMA_BASE_URL` must be a literal loopback `/v1` endpoint. Environment
+proxies and redirects cannot bypass the policy. The local server must separately
+have cloud functionality and outbound traffic disabled; mock is the only mode
+that guarantees no model network use within ExecFlow.
 
 ## Data governance
 
-- Raw rows stay on the machine by default. The analyst sees column names, kinds, null counts, ranges, top categories and the aggregates it asks for. Set `EXECFLOW_SEND_ROWS=true` only for data that may leave the organisation.
-- Groq, Nous Portal and OpenRouter are external cloud services. For RTA data classified above public, run the `ollama` provider (local) or route through a self-hosted Hermes Agent. The pipeline is identical; only the base URL changes.
+- Raw rows are excluded from model tools by default. Profiles, text previews, aggregates and memory may still be sensitive. Use synthetic data until the local server and data-handling boundary are independently verified.
+- Groq, Nous Portal, OpenRouter and Hermes model forwarding are disabled. A loopback server can itself forward requests elsewhere; local mode alone is not approval to use classified data.
 - Every run stores its evidence, so any number in a report can be traced to a tool call and re-executed.
 - Findings that fail verification are kept in the run as "rejected" with the reason, and excluded from the report.
 
@@ -52,7 +56,7 @@ Model ids were taken from Groq's published catalogue in September 2026 (gpt-oss-
 # 1. service
 python -m venv .venv && . .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -e "./server[dev]"
-cp .env.example .env                                   # add GROQ_API_KEY
+cp .env.example .env                                   # set your runtime EXECFLOW_API_TOKEN
 set -a; . ./.env; set +a                               # Windows: set each variable
 cd server && python -m pytest -q && cd ..
 uvicorn execflow.api:app --port 8000 --app-dir server
@@ -63,7 +67,7 @@ npm install && npm run dev                             # http://localhost:5173/#
 npm run build                                          # then open http://127.0.0.1:8000/#reporting
 ```
 
-Docker: `docker compose up --build` serves UI and API on port 8000. `docker compose --profile local up` adds Ollama.
+Docker: `docker compose up --build` serves UI and API on loopback port 8000 with the offline example configuration. For local inference, use the native setup and the execution policy above.
 
 ## API
 
@@ -83,9 +87,9 @@ Docker: `docker compose up --build` serves UI and API on port 8000. `docker comp
 Hermes Agent (Nous Research, open source) supplies the long-lived layer: memory across sessions, skills, delegation to sub-agents, and messaging surfaces. ExecFlow supplies the numbers. Files under `hermes/`:
 
 - `skills/reporting/execflow-reporting/` is a Hermes skill. Add the folder to `skills.external_dirs` in `~/.hermes/config.yaml`; the skill calls the service through `scripts/execflow.py` and tells the agent to quote only confirmed findings and to record definitions in both memories.
-- `config.example.yaml` shows the intended split: orchestrator on a Hermes 4 model (Nous Portal) or on Groq, `delegate_task` children pinned to Groq through `delegation.base_url`, the API server enabled on port 8642.
-- `env.example` lists the keys for both sides.
-- `plugins/execflow/dashboard/` is a drop-in tab for the Hermes web dashboard (`hermes dashboard`): copy to `~/.hermes/plugins/execflow/`, it lists datasets, runs an analysis and shows the latest confirmed findings and report through a small FastAPI proxy.
+- `config.example.yaml` is an optional local-only template with its gateway disabled. Review the installed Hermes version and local server separately before use; this template is not applied automatically.
+- `env.example` uses offline ExecFlow defaults and no cloud provider keys.
+- `plugins/execflow/dashboard/` is disabled pending verified inbound authentication. Its routes return 503 before any upstream access. Do not inject a service credential or install it as a working proxy.
 
 Hermes reads uploaded documents from disk paths, not through its HTTP API, so files shared in chat must be saved locally before the skill uploads them.
 
@@ -93,11 +97,12 @@ Hermes reads uploaded documents from disk paths, not through its HTTP API, so fi
 
 Verified in this environment: ingestion of xlsx, csv and docx (pdf via pdfplumber is exercised by the same code path), profiling, all analytics tools, the evidence gate, memory recall and export, the API, and the full analyst, reviewer and reporter chain against a deterministic mock, both in tests and in a browser session.
 
-Not verified here: live calls to Groq, Nous Portal or Ollama (no outbound route from the build sandbox), the Hermes skill and dashboard plugin against a running Hermes install. Both were written against Hermes' own documentation in its repository; run `hermes skills list` and open the dashboard tab to confirm on your machine.
+Not verified here: live Ollama inference, local-server egress restrictions, or the Hermes skill against a running install. Cloud execution is disabled and the dashboard proxy intentionally remains unavailable. All new policy tests are synthetic and offline.
 
 ## Extending
 
 - New file type: add a reader in `ingest.py` and its extension to `SUPPORTED`.
 - New analytics tool: add a function and its schema in `analytics.py`; the analyst gets it automatically and the reviewer gate still applies.
-- New role or model: add a provider to `PROVIDERS` in `llm.py` or set `EXECFLOW_MODEL_<ROLE>`.
+- New role or model: every `EXECFLOW_MODEL_<ROLE>` must satisfy the execution policy. Adding a legacy provider name to the catalogue does not authorize or enable its network use.
 - Report structure: edit `REPORTER_SYSTEM` in `agents.py` (English and Arabic).
+

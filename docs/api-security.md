@@ -18,10 +18,17 @@ it must point only to your trusted service. Do not put tokens in URLs or cookies
 The standalone synthetic dashboard remains usable without the analytics service.
 
 The Hermes CLI reads `EXECFLOW_API_TOKEN` from its own environment. The optional
-Hermes dashboard proxy intentionally does NOT forward this secret yet: enabling a
-privileged proxy without verifying authentication on its inbound routes would
-reintroduce unauthenticated access. Review the host's authentication boundary before
-wiring this integration; until then it receives 401 from ExecFlow.
+Hermes dashboard proxy is disabled in code: all implemented routes return 503
+before any upstream action, even if an environment token or enable flag is present.
+No upstream client or credential forwarding exists in the proxy. Enabling it
+requires a separately reviewed implementation that validates the host's inbound
+identity and authorization before credential access, followed by negative tests
+against unauthenticated and unauthorized callers. It was not enabled or tested
+against a running Hermes install.
+
+Model execution defaults to `EXECFLOW_MODE=mock` (zero network). The only other
+supported mode is `local`, limited to local Ollama. See
+[execution policy](execution-policy.md) for the guards and local-server limits.
 
 Compose binds ExecFlow to loopback by default. Remote access needs an explicitly
 reviewed TLS/auth deployment. Do not expose the service over plaintext HTTP.

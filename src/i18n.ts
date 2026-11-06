@@ -122,7 +122,7 @@ const table = {
   run: ["Run analysis", "تشغيل التحليل"],
   running: ["Agents working", "الوكلاء يعملون"],
   backendOffline: ["The analytics backend is not reachable. Start it with: uvicorn execflow.api:app --port 8000", "الخادم التحليلي غير متاح. شغّله بالأمر: uvicorn execflow.api:app --port 8000"],
-  mockWarning: ["Mock provider: no model key configured. Set GROQ_API_KEY (or another provider) for real analysis.", "مزود تجريبي: لا يوجد مفتاح نموذج. اضبط GROQ_API_KEY (أو مزوداً آخر) للتحليل الفعلي."],
+  mockWarning: ["Offline mock: synthetic demonstration only. Cloud execution is disabled.", "وضع تجريبي دون اتصال: للعرض ببيانات اصطناعية فقط. التشغيل السحابي معطّل."],
   models: ["Models", "النماذج"],
   findings: ["Confirmed findings", "النتائج المؤكدة"],
   rejectedFindings: ["Not verified (excluded from the report)", "غير متحقق منها (مستبعدة من التقرير)"],
@@ -160,3 +160,4 @@ export function bi(v: { en: string; ar?: string } | undefined, lang: Lang): stri
   if (!v) return "";
   return lang === "ar" && v.ar ? v.ar : v.en;
 }
+

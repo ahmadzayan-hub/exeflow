@@ -44,17 +44,18 @@ All commands use the helper script. Replace the path with the file the user gave
 1. Run `health`. If it fails, tell the user the service is down and how to start it. Do not attempt the analysis another way.
 2. `upload` the file. Note the `dataset_id`, the tables found, and the candidate metrics. If the file produced no tables, say so; a scanned PDF has no text layer.
 3. If the user's question mentions a KPI, contract or term, run `memory list` and use any matching definition or baseline in the question you pass to `analyse`.
-4. Run `analyse` with the user's question and the language they want (`en` or `ar`). It takes 20 to 90 seconds on Groq.
+4. Run `analyse` with the user's question and the language they want (`en` or `ar`). The default is a synthetic offline mock. Optional local Ollama must satisfy the local execution policy.
 5. Reply with: the confirmed findings (title, one line of detail, evidence id), the KPI values, then the report text from `report`. Mention how many findings the reviewer rejected and why, in one line.
 6. If the user states a definition, baseline or preference that should apply to future runs, record it with `memory add <kind> "<text>"`. Kinds: definition, baseline, preference, note. Also add the one-line version to your own memory tool so you recall it without the service.
 
 ## Pitfalls
 
 - The service reads local files by path. Files sent through chat must be saved to disk first.
-- Raw rows are not sent to the model provider by default (`EXECFLOW_SEND_ROWS=false`). Only schema, profiles and aggregates leave the machine. Do not work around this.
+- Raw rows are not sent to the model provider by default (`EXECFLOW_SEND_ROWS=false`). This is not a privacy guarantee: schema, profiles, text and memory may still be sensitive. Cloud execution is disabled; do not work around this.
 - A finding in `rejected` is not a fact. Never quote it.
 - Arabic reports are returned in `report_md`; keep the Markdown headings when relaying.
 
 ## Verification
 
 `analyse` output contains `evidence` keyed by id. A finding is usable only when every id it cites exists there. The script prints `OK: n confirmed, m rejected`; if n is 0, report that the data did not support any finding rather than improvising.
+
