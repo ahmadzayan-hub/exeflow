@@ -4,6 +4,8 @@ Every `/api` request requires `Authorization: Bearer <token>`, including health,
 reports and memory exports. Docs/OpenAPI require the same credential. Missing or
 blank `EXECFLOW_API_TOKEN` fails closed with 503; invalid credentials return 401.
 Only CORS preflight and static dashboard assets remain public. CORS is not auth.
+The guard uses Starlette's route-path normalization, so API and docs remain
+protected when a reverse proxy mounts the application under a URL prefix.
 
 Before starting the service, the operator must set a strong unique
 `EXECFLOW_API_TOKEN` in the runtime environment (or ignored `.env` for Compose).
@@ -36,9 +38,18 @@ reviewed TLS/auth deployment. Do not expose the service over plaintext HTTP.
 This is a single-operator boundary, not multi-user/tenant authorization. Every
 holder has full access to all datasets, analysis and memory. Before shared or
 production deployment, review per-user authorization, rate/upload limits, TLS,
-proxy authentication, logging redaction, backups and token rotation. The upload
-size check still occurs after reading the authenticated upload and is not a
-streaming resource limit. Static bundled/imported portfolio data is outside this
+proxy authentication, logging redaction, backups and token rotation. Upload
+requests now have a byte limit before multipart parsing: the configured file
+limit plus 1 MiB for multipart fields and framing. The gate counts actual bytes,
+including chunked requests and dishonest Content-Length values, and rejects with
+413 before ingestion or storage. Authentication still runs before body reads.
+Accepted requests use a temporary spool (1 MiB rollover threshold, with at most
+one additional 64 KiB write before rollover)
+that is closed after the request, rejection or disconnect. The file reader is
+also bounded to the file limit plus one byte. This does not limit concurrent
+requests, slow clients, archive expansion, workbook dimensions or parser CPU;
+those remain rollout checks along with reverse-proxy limits. Static
+bundled/imported portfolio data is outside this
 API boundary; use synthetic data in publicly served builds.
 
 Validation: `cd server && python -m pytest -q`; `npm test`; `npm run typecheck`;

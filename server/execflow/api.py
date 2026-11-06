@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+from starlette._utils import get_route_path
 
 from . import __version__
 from .agents import run_analysis
@@ -21,12 +22,19 @@ from .ingest import SUPPORTED, ingest, list_datasets, load_dataset, save_dataset
 from .llm import load_routing
 from .memory import KINDS, Memory
 from .profile import candidate_metrics, profile_dataset
+from .upload_limits import MULTIPART_OVERHEAD_BYTES, UploadBodyLimitMiddleware
 
 DATA_ROOT = Path(os.environ.get("EXECFLOW_DATA", "data"))
 DATASETS = DATA_ROOT / "datasets"
 MAX_UPLOAD_MB = int(os.environ.get("EXECFLOW_MAX_UPLOAD_MB", "25"))
+if MAX_UPLOAD_MB <= 0:
+    raise ValueError("EXECFLOW_MAX_UPLOAD_MB must be a positive integer")
 
 app = FastAPI(title="ExecFlow analytics", version=__version__)
+# Added first so CORS and the authentication middleware wrap this body gate.
+# Unauthorized requests are rejected without consuming or spooling the body.
+app.add_middleware(UploadBodyLimitMiddleware,
+                   max_body_bytes=MAX_UPLOAD_MB * 1024 * 1024 + MULTIPART_OVERHEAD_BYTES)
 app.add_middleware(CORSMiddleware, allow_origins=os.environ.get("EXECFLOW_CORS", "http://localhost:5173").split(","), allow_methods=["*"], allow_headers=["*"])
 
 
@@ -38,7 +46,9 @@ async def execution_policy_error(request: Request, error: ExecutionPolicyError):
 async def authenticate(request: Request, call_next):
     # Protect the entire API namespace, including future routes, before parsing
     # uploads or invoking storage/providers. CORS preflight carries no data.
-    path = request.scope.get("path", "")
+    # Match Starlette routing for reverse proxies that mount the service under
+    # a URL prefix. Raw scope paths can include root_path and would miss /api.
+    path = get_route_path(request.scope)
     protected = path == "/api" or path.startswith("/api/") or path in {
         "/docs", "/docs/oauth2-redirect", "/redoc", "/openapi.json"
     }
@@ -105,7 +115,9 @@ def health():
 
 @app.post("/api/upload")
 async def upload(file: UploadFile = File(...), name: str | None = Form(None)):
-    data = await file.read()
+    # The request gate already bounds multipart overhead. This second cap
+    # enforces the documented file limit without an unbounded in-memory read.
+    data = await file.read(MAX_UPLOAD_MB * 1024 * 1024 + 1)
     if len(data) > MAX_UPLOAD_MB * 1024 * 1024:
         raise HTTPException(413, f"file exceeds {MAX_UPLOAD_MB} MB")
     try:
