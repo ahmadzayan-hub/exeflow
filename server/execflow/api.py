@@ -4,11 +4,12 @@ execflow-reporting skill). Run: uvicorn execflow.api:app --port 8000"""
 from __future__ import annotations
 
 import os
+import secrets
 from pathlib import Path
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -26,6 +27,33 @@ MAX_UPLOAD_MB = int(os.environ.get("EXECFLOW_MAX_UPLOAD_MB", "25"))
 
 app = FastAPI(title="ExecFlow analytics", version=__version__)
 app.add_middleware(CORSMiddleware, allow_origins=os.environ.get("EXECFLOW_CORS", "http://localhost:5173").split(","), allow_methods=["*"], allow_headers=["*"])
+
+@app.middleware("http")
+async def authenticate(request: Request, call_next):
+    # Protect the entire API namespace, including future routes, before parsing
+    # uploads or invoking storage/providers. CORS preflight carries no data.
+    path = request.scope.get("path", "")
+    protected = path == "/api" or path.startswith("/api/") or path in {
+        "/docs", "/docs/oauth2-redirect", "/redoc", "/openapi.json"
+    }
+    preflight = (request.method == "OPTIONS" and "origin" in request.headers
+                 and "access-control-request-method" in request.headers)
+    if protected and not preflight:
+        token = os.environ.get("EXECFLOW_API_TOKEN", "")
+        if not token or not token.strip():
+            return JSONResponse({"detail": "API authentication is not configured"},
+                                status_code=503, headers={"Cache-Control": "no-store"})
+        values = request.headers.getlist("authorization")
+        scheme, _, supplied = (values[0] if len(values) == 1 else "").partition(" ")
+        if (scheme.lower() != "bearer" or not supplied or
+                not secrets.compare_digest(supplied.encode(), token.encode())):
+            return JSONResponse({"detail": "Valid bearer token required"}, status_code=401,
+                                headers={"WWW-Authenticate": "Bearer", "Cache-Control": "no-store"})
+    response = await call_next(request)
+    if protected:
+        response.headers["Cache-Control"] = "no-store"
+    return response
+
 
 _memory: Memory | None = None
 
@@ -168,3 +196,4 @@ def memory_md():
 _UI = Path(os.environ.get("EXECFLOW_UI_DIST", Path(__file__).resolve().parents[2] / "dist"))
 if _UI.is_dir():
     app.mount("/", StaticFiles(directory=str(_UI), html=True), name="ui")
+

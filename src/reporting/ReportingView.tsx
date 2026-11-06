@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Lang } from "../i18n";
 import { t } from "../i18n";
-import { api, type DatasetMeta, type Finding, type Health, type MemoryItem, type RunResult } from "./api";
+import { api, setApiToken, type DatasetMeta, type Finding, type Health, type MemoryItem, type RunResult } from "./api";
 import { Chart } from "./Charts";
 import { Markdown } from "./Markdown";
 
 export function ReportingView({ lang }: { lang: Lang }) {
+  const [token, setToken] = useState("");
+  const [connecting, setConnecting] = useState(false);
   const [health, setHealth] = useState<Health | null | undefined>(undefined);
   const [datasets, setDatasets] = useState<DatasetMeta[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
@@ -132,6 +134,25 @@ export function ReportingView({ lang }: { lang: Lang }) {
         )}
       </div>
 
+      {!health && <form className="panel" onSubmit={async (event) => {
+        event.preventDefault();
+        if (connecting) return;
+        setConnecting(true);
+        setApiToken(token);
+        setToken("");
+        try { await refresh(); } finally { setConnecting(false); }
+      }}>
+        <label htmlFor="api-token">{lang === "ar" ? "رمز الوصول للخدمة" : "Service access token"}</label>
+        <input id="api-token" type="password" autoComplete="off" value={token}
+          onChange={(event) => setToken(event.target.value)} />
+        <button className="btn" disabled={!token || connecting}>
+          {lang === "ar" ? "اتصال" : "Connect"}
+        </button>
+      </form>}
+      {health && <button className="btn" onClick={() => {
+        setApiToken("");
+        window.location.reload();
+      }}>{lang === "ar" ? "قطع الاتصال" : "Disconnect"}</button>}
       {health === null && <div className="banner banner-error">{t("backendOffline", lang)}</div>}
       {health?.routing.mock && <div className="banner banner-demo">{t("mockWarning", lang)}</div>}
       {error && (
@@ -355,3 +376,4 @@ function FindingRow({ f, lang }: { f: Finding; lang: Lang }) {
     </li>
   );
 }
+

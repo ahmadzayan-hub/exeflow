@@ -1,7 +1,7 @@
 services:
   execflow:
     build: .
-    ports: ["8000:8000"]
+    ports: ["127.0.0.1:8000:8000"]
     env_file: .env
     volumes:
       - execflow-data:/data
@@ -19,3 +19,4 @@ services:
 volumes:
   execflow-data:
   ollama:
+
