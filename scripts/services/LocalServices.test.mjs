@@ -28,5 +28,7 @@ test('enabled monitoring scans automatically while the local server is running',
   t.after(async () => { await local.close(); await rm(directory, { recursive: true, force: true }); });
   const runtime = await import('../../dist/CommitmentRuntime.mjs'); const register = runtime.acceptCandidates(runtime.emptyRegister(), runtime.extractMinutes('Action: Timer test | Due: 2020-01-01', 'Synthetic timer', '2020-01-01').candidates, '2020-01-01');
   await local.automation.sync(register, 0); await local.automation.configure({ enabled: true, email: true, recipients: ['test@example.test'], remindAfterDays: 1, escalateAfterDays: 3 }, true);
-  await Promise.race([sent, new Promise((_, reject) => { const timer = setTimeout(() => reject(new Error('Automatic scan did not run')), 2000); timer.unref(); })]);
+  let watchdog;
+  try { await Promise.race([sent, new Promise((_, reject) => { watchdog = setTimeout(() => reject(new Error('Automatic scan did not run')), 2000); })]); }
+  finally { clearTimeout(watchdog); }
 });

@@ -62,6 +62,7 @@ export class LocalAutomation {
           const age = record?.due ? Math.floor((Date.parse(today) - Date.parse(record.due)) / 86400000) : -1;
           if (!policy.enabled || !policy.email || policy.accountId !== this.graph.status().account?.id) return;
           if (!record || record.status === 'closed' || record.due !== e.due || age < policy.remindAfterDays || (e.stage === 'reminder' && (e.date !== today || age >= policy.escalateAfterDays))) { e.status = 'cancelled'; return; }
+          if (e.stage === 'escalation' && age < policy.escalateAfterDays) return;
           e.text = record.text; e.owner = record.owner; e.source = record.source.name; e.status = 'attempting'; payload = structuredClone(e); recipients = [...policy.recipients]; send = true;
         });
         if (!send) continue;

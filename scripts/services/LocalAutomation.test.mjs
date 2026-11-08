@@ -44,3 +44,12 @@ test('changing Microsoft accounts blocks automatic sending until sender policy i
   graph.status = () => ({ delivery: true, account: { id: 'different-account' } }); await service.scan(); assert.equal(sent.length, 0); assert.match(service.error, /differs/);
   await service.configure(policy(true), true); await service.scan(); assert.equal(sent.length, 1);
 });
+
+test('raising the escalation threshold holds a queued escalation until the approved day', async t => {
+  const { service, graph, sent } = await setup(t, true); await service.sync(register(), 0); await service.configure(policy(true), true);
+  service.now = () => new Date('2026-11-04T10:00:00Z'); graph.status = () => ({ delivery: false }); await service.scan();
+  assert.equal(service.state.events[0].stage, 'escalation'); assert.equal(service.state.events[0].status, 'pending');
+  graph.status = () => ({ delivery: true, account: { id: 'synthetic-account' } }); await service.configure({ ...policy(true), escalateAfterDays: 10 }, true); await service.scan();
+  assert.equal(sent.filter(s => s.event.stage === 'escalation').length, 0); assert.equal(service.state.events[0].status, 'pending');
+  service.now = () => new Date('2026-11-11T10:00:00Z'); await service.scan(); await service.scan(); assert.equal(sent.filter(s => s.event.stage === 'escalation').length, 1);
+});
