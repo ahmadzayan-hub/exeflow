@@ -1,58 +1,58 @@
-# ExecFlow local launcher test results
+# ExecFlow Windows acceptance results
 
-Prepared for Ahmed Zaian. Date: 9 November 2026, Dubai.
+Prepared for Ahmed Zaian (أحمد زيان). Date: 9 November 2026, Dubai.
 
-## Scope and source
+## Outcome and evidence
 
-Base: PR #6, commit `1ae40303098feabecb3877fbab785d60cb4cac8e`, fetched 9 November Dubai time. GitHub reported the PR open and Draft. All work stayed in a separate local branch, `feat/windows-local-launcher`. The follow-up prepared local review branch feat/windows-local-launcher and a Windows CI job; upload was blocked by automatic approval review and the remote branch lookup returned 404. No application deployment, merge, production configuration edit, migration, or live data use is included. See the follow-up evidence for the actual CI outcome.
+GitHub Actions run [42520994875](https://github.com/ahmadzayan-hub/exeflow/actions/runs/42520994875) completed successfully for tested source commit `fac13d2ce0a1c216ab5934492e6b0200254bfd83` on branch `feat/windows-local-launcher`. Both the Windows and Linux jobs passed. No merge, application deployment, production configuration change, migration or live data use occurred.
 
-Added `StartExecFlow.cmd`, dependency-free `scripts/LocalLauncher.mjs`, launcher and persistence tests, local npm commands and operating instructions. Existing application source, parser, storage schema, JSON export/import, Vite configuration and backend were not changed. The built page is served from `http://127.0.0.1:4173/#commitments` only. The server does not change ports, install dependencies, stop other applications or provide backend reporting APIs.
+The branch adds a fixed-origin, dependency-free Node static launcher to PR #6 base `1ae40303098feabecb3877fbab785d60cb4cac8e`. It preserves the existing app, commitment parser, JSON schema, localStorage key, portfolio and backend code. Runtime remains local at `http://127.0.0.1:4173/#commitments`.
 
-## Actual results
+## Actual execution results
 
-| Check | Result | Evidence |
+| Check | Environment | Result |
 | --- | --- | --- |
-| TypeScript check | Passed | Typecheck.log |
-| Production and standalone build | Passed | Build.log |
-| Existing unit/component suite | 70 passed, zero failed | UnitTests.log |
-| Local launcher suite | 12 passed, zero failed | LauncherTests.log |
-| Existing commitment browser suite | 5 scenarios passed | CommitmentsBrowser.log |
-| Existing Jarvis browser suite | 4 scenarios passed | JarvisBrowser.log |
-| New fixed-origin persistence/recovery suite | English desktop and Arabic mobile passed | PersistenceTests.log |
-| Patch whitespace check | Passed | `git diff --cached --check` |
+| Production and standalone build | Windows Server 2025, Node v22.23.4 | Passed |
+| Launcher suite | Windows | 11 passed, 0 failed, 1 skipped |
+| Native cmd.exe acceptance | Windows | All 6 cases passed |
+| Full browser/server restart and JSON recovery | Windows, preinstalled Google Chrome through Playwright 1.62.1 | English desktop and Arabic mobile passed |
+| TypeScript check, production build and dependency audit | Linux CI | Passed |
+| Existing frontend unit/component tests | Linux CI | 70 passed |
+| Existing commitment and Jarvis browser tests | Linux CI | 9 scenarios passed |
+| Existing backend tests | Linux CI | 288 passed, 2 deprecation warnings |
+| Additional launcher suite | Local Linux, Node v24.22.1 | 12 passed, no failures or skips |
 
-Launcher checks exercise fixed origin, missing build error, IPv4 loopback binding, HTML delivery, cache/network restrictions, Host rejection, disallowed methods, source-file nonexposure, occupied-port failure with original server still healthy, shutdown/restart, and the actual Node CLI running from a directory with spaces without node_modules. The updated CLI stops with Enter or POSIX SIGINT, exits with code zero and releases the port.
+The Windows skip is intentional: sending SIGINT with Windows process.kill does not emulate interactive console Ctrl+C. Enter shutdown was actually tested through the Windows command launcher and released the port. Windows default-browser association and real interactive Ctrl+C/SIGBREAK remain manual device checks; CI suppresses automatic browser opening, and the persistence suite starts Chrome explicitly. The CheckExecFlow.cmd convenience wrapper was not separately invoked by CI; its underlying Windows acceptance script and StartExecFlow.cmd were executed.
 
-Each new browser case creates a disposable on-disk browser profile, captures a synthetic source-bound item via the review gate, closes it, exports JSON through the UI, and checks reload. It then closes the entire browser process and actual launcher server, restarts both at port 4173, and compares the complete stored register. It removes the commitment storage key to simulate register loss, confirms an empty register, restores the downloaded JSON through the UI and compares every field with the original. Invalid JSON leaves the restored register unchanged. A second browser/server restart retains the restoration. Source quotes and closure date survive. No external HTTP requests or page errors were observed. SyntheticEnglish.json and SyntheticArabic.json are the actual exported files.
+## Native Windows cases actually passed
 
-The previous browser suite additionally checks RTL, mobile overflow, review gating, unresolved lines, invalid backups and the file-preview warning. Jarvis checks UI evidence and keyboard flows; it did not validate real audio or installed Arabic/English voices.
+1. Launch StartExecFlow.cmd from a path containing spaces and `&`, serve the fixed origin, and exit cleanly with Enter.
+2. Use an approved portable Runtime/node.exe with no Node in PATH and no npm/node_modules in the disposable package.
+3. Show an actionable missing-Node message and fail cleanly.
+4. Show recovery instructions for a missing built page and fail cleanly.
+5. Reject an occupied port without selecting another port or terminating the synthetic port owner.
+6. Reopen the same port after clean shutdown.
 
-## Environment and limits
+WindowsAcceptance.json is the actual output of these cases. The tests used temporary files, never the user's normal browser profile.
 
-Actual execution: Linux, Node v24.22.1, Playwright 1.62.1, Chromium 153.0.8010.0 supplied by @sparticuz/chromium 153.0.0. The default Playwright browser download returned invalid archive bytes, so the browser binary was obtained from that npm package and extracted locally. Test launches used `--no-sandbox`, `--disable-dev-shm-usage`, `--no-zygote`, and `--use-angle=swiftshader`. Browser web security was not disabled. Windows and Linux tests must not be conflated.
+## Browser recovery actually passed on Windows
 
-No Windows executor, cmd.exe, Windows default-browser association, Edge profile, enterprise device policy or Windows process-control runtime was available. Therefore **the .cmd launcher, missing-Node console branch, automatic Windows browser opening and Windows Ctrl+C behaviour remain unverified on an actual Windows machine**. The cross-platform Node server, lifecycle and browser persistence were actually tested as above. Node version rejection is implemented but was not tested with an older Node executable. Backend tests were not rerun because backend code was untouched and is not included as a running service in this package.
+For each language, the suite used a disposable on-disk Chrome profile to capture, review, save and close a synthetic source-bound item. It downloaded the JSON backup through the UI, reloaded, and then stopped the entire browser process and launcher server. After restarting both at the same origin, it compared the complete register with the original.
 
-These results do not prove storage durability under power loss, profile corruption, browser cleanup, quota changes or all device policies. localStorage remains working browser storage; independent JSON files are required for recovery. No automatic disk backup is claimed. Previously saved file: or another origin's records must be exported there and imported into the fixed local origin.
+It then removed the register's storage key to simulate loss, verified the empty register, restored the downloaded JSON through the UI and compared every field. Invalid JSON did not replace the valid register. A second full browser/server restart retained the restoration. Source quotes and closure dates survived. No external page requests or JavaScript page errors were observed. The Windows artifact contains the actual SyntheticEnglish.json and SyntheticArabic.json files; these are stored under Evidence/Windows in the package to distinguish them from Linux exports.
 
-## Reproduce and Windows acceptance
+Removing a register key is a controlled loss test, not certification of recovery after device failure or profile corruption. localStorage remains working browser storage, not a permanent backup. Keep independent JSON copies outside the application folder.
 
-From the source checkout, run `npm ci`, `npm run typecheck`, `npm test`, `npm run build`, and `npm run test:local`. Install Playwright 1.62.1 in a disposable tooling directory and install its Chromium runtime. Set `BROWSER_TOOL_ROOT` to that directory, then run:
+## Package verification and provenance
 
-```text
-node scripts/verify-commitments-browser.mjs
-node scripts/verify-jarvis-browser.mjs
-node scripts/VerifyLocalPersistence.mjs
-```
+Evidence/WindowsCI.log and Evidence/LinuxCI.log contain the actual job logs. Evidence/CIResults.json records the run, jobs, tested SHA and artifact metadata. The downloaded WindowsAcceptance.zip was verified against GitHub's SHA256 digest `a112d4961ac8905de555b86989755cdc16681feb42e8ba535cf62d9e9297f244`.
 
-The test scripts require the launcher port to be free. The acceptance test creates and deletes only its own disposable browser profiles, never your normal browser data. The package includes the new test sources and logs; existing test sources remain in PR #6. The CLI Enter-shutdown subtest is cross-platform. The SIGINT subprocess test runs on POSIX only; Windows console Ctrl+C requires a separate manual check. The launcher tests included in this package can run directly with `node --test scripts/LocalLauncher.test.mjs`.
+The delivered built HTML comes from the successful Linux CI artifact, whose archive digest was verified as `61a7fe6bbde2559a813d5da9f6cd015b3b0247a1c44f1d26a9fe69887aa00e04`. Its bytes match the local build exactly. HTML SHA256: `1eaa12627e67743d2e772d2eb974629c37491a272ff4f9237843870d533cade0`.
 
-On Windows, extract to a local folder, start StartExecFlow.cmd, verify the exact URL, make and export a synthetic item, close browser and server, restart and verify the item. Restore JSON in a separate test profile. Start a second launcher while the first is active and verify the occupied-port message. Stop with Ctrl+C, then restart. Record Windows/Node/browser versions and outcomes before calling Windows acceptance complete.
+The final documentation update follows the tested code commit without changing runtime or tests. The package includes the complete review patch and checksums. Runtime prerequisites are Node.js 22+ and a browser. The Node binary is not bundled, and the launcher does not download dependencies. Reporting still requires its separately configured backend and is not supplied as a running service by this package.
 
-## Follow-up changes and remaining gate
+## Usage and remaining device checks
 
-The first piped Enter test revealed that the HTTP server could close while its stdin pipe kept Node alive. Shutdown now closes readline and destroys the stdin handle. Fresh process tests confirm exit code zero and immediate reuse of port 4173 for both Enter and POSIX SIGINT. Windows SIGBREAK is also handled, but actual Windows signal behaviour is not claimed as tested.
+Extract the whole package. Use StartExecFlow.cmd and keep its window open. Press Enter to stop. An approved portable node.exe may be placed in Runtime if installed Node is unavailable. Close the app before running CheckExecFlow.cmd. Use the same exact origin and browser profile for your real register. Export JSON backups to a separate safe folder.
 
-StartExecFlow.cmd now supports an approved portable Runtime/node.exe before checking PATH. CheckExecFlow.cmd provides a native Windows synthetic acceptance entry point without npm dependencies. VerifyWindowsLauncher.mjs defines six native Windows checks and writes WindowsAcceptance.json only after all six pass. Those checks are prepared, not executed in this environment. The Windows CI job also includes real browser process restart and JSON recovery; its execution is pending explicit approval to upload the isolated test branch and run GitHub Actions. No workflow, branch or application was published by this follow-up.
-
-All source changes are included in the review patch. Local source commit 5df029e was created before the blocked push, with further local refinements included in that patch. No merge or production change occurred. The package retains Node as an external approved prerequisite, so it is not a standalone Windows executable or an installed Node runtime.
+The successful hosted Windows Server test does not certify every Windows 10/11 installation, managed RTA endpoint policy, browser profile or default-browser association. Verify the normal browser opens on your device; if it does not, copy the printed fixed URL manually. Real voice availability and audio were not validated. No guarantee of permanent browser-storage retention is claimed.
