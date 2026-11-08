@@ -3,11 +3,20 @@ import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { mkdir } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
+import { createServer } from 'node:http';
 const require = createRequire(resolve(process.env.BROWSER_TOOL_ROOT, 'package.json'));
 const { chromium } = require('playwright');
 const browser = await chromium.launch({ headless: true });
 const key = 'exeflow.commitments.v1';
 await mkdir('artifacts/commitments', { recursive: true });
+const html = await readFile(resolve('dist/rmd-dashboard.html'));
+const server = createServer((request, response) => {
+  if (request.url !== '/rmd-dashboard.html') { response.writeHead(404); response.end(); return; }
+  response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' }); response.end(html);
+});
+await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+const origin = `http://127.0.0.1:${server.address().port}`;
 try {
   for (const lang of ['en', 'ar']) for (const width of [1440, 390]) {
     const en = lang === 'en';
@@ -22,12 +31,15 @@ try {
     }, { lang });
     const network = [], errors = [];
     await context.route('**/*', route => {
-      if (/^https?:/.test(route.request().url())) { network.push(route.request().url()); return route.abort(); }
+      const url = route.request().url();
+      if (/^https?:/.test(url) && url !== `${origin}/rmd-dashboard.html`) { network.push(url); return route.abort(); }
       return route.continue();
     });
     const page = await context.newPage();
     page.on('pageerror', error => errors.push(error.message));
-    await page.goto(`${pathToFileURL(resolve('dist/rmd-dashboard.html')).href}#commitments`);
+    // A stable HTTP origin is required for portable localStorage behavior.
+    // file: storage is undefined across browsers and is separately labelled below.
+    await page.goto(`${origin}/rmd-dashboard.html#commitments`);
     const title = en ? 'Commitment register' : 'سجل الالتزامات';
     await page.getByRole('heading', { name: title, exact: true }).waitFor();
     assert.equal(await page.locator('html').getAttribute('dir'), en ? 'ltr' : 'rtl');
@@ -71,8 +83,12 @@ try {
     await page.getByRole('alert').waitFor();
     assert.deepEqual(await page.evaluate(key => JSON.parse(localStorage.getItem(key)), key), stored);
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), 'no horizontal overflow');
-    assert.deepEqual(network, [], 'capture, save and brief stay offline'); assert.deepEqual(errors, []);
-    console.log(`PASS commitments ${lang}/${width}: review gate, unresolved line, source preservation, closure, reload, backup/restore, invalid backup, no network or overflow`);
+    assert.deepEqual(network, [], 'only the local standalone HTML is requested'); assert.deepEqual(errors, []);
+    console.log(`PASS commitments ${lang}/${width}: review gate, unresolved line, source preservation, closure, reload, backup/restore, invalid backup, no external network or overflow`);
     await context.tracing.stop(); await context.close();
   }
-} finally { await browser.close(); }
+  const preview = await browser.newPage();
+  await preview.goto(`${pathToFileURL(resolve('dist/rmd-dashboard.html')).href}#commitments`);
+  await preview.getByText('This file preview may lose saved records when reloaded.', { exact: false }).waitFor();
+  console.log('PASS file preview explicitly warns that reload persistence is not guaranteed');
+} finally { await browser.close(); await new Promise(resolve => server.close(resolve)); }

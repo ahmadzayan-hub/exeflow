@@ -15,6 +15,7 @@ function download(name: string, text: string, type: string) {
 
 export function CommitmentsView({ lang }: { lang: Lang }) {
   const en = lang === "en";
+  const filePreview = location.protocol === "file:";
   const label = (english: string, arabic: string) => en ? english : arabic;
   const [initial] = useState(readRegister);
   const [register, setRegister] = useState(initial.register);
@@ -59,9 +60,12 @@ export function CommitmentsView({ lang }: { lang: Lang }) {
       "Offline, on this browser only. Review each source line before saving. Use synthetic or approved non-confidential minutes. Export a backup; this is not shared storage or organizational approval.",
       "يعمل دون اتصال، على هذا المتصفح فقط. راجع كل سطر مصدر قبل الحفظ. استخدم محاضر اصطناعية أو معتمدة غير سرية. صدّر نسخة احتياطية؛ هذا ليس تخزيناً مشتركاً أو اعتماداً مؤسسياً.",
     )}</p>
+    {filePreview && <p className="banner" role="note">{label("This file preview may lose saved records when reloaded. Export a backup before leaving. Open the app through its local server for browser persistence.", "قد تفقد معاينة الملف البنود عند إعادة التحميل. صدّر نسخة احتياطية قبل المغادرة. افتح التطبيق عبر خادمه المحلي للحفظ في المتصفح.")}</p>}
     {storageBlocked && <p role="alert">{label("Stored register is unreadable or storage is unavailable. Existing data was preserved. Recover it before restoring a valid backup; new captures are disabled.", "السجل المخزن غير قابل للقراءة أو التخزين غير متاح. تم الحفاظ على البيانات الموجودة. استعدها قبل تحميل نسخة سليمة؛ إضافة البنود معطلة.")}</p>}
     {error && <p role="alert">{label("Could not save or read the register. Check the backup format, date, record limit (1,000), and browser storage. Existing saved data has not been replaced.", "تعذّر حفظ السجل أو قراءته. تحقق من صيغة النسخة والتاريخ وحد السجلات (١٠٠٠) وتخزين المتصفح. لم يتم استبدال البيانات المحفوظة.")}</p>}
-    {saved !== null && <p role="status">{label(`Saved ${saved} records. Repeated source lines are skipped.`, `تم حفظ ${saved} بنداً. يتم تجاهل أسطر المصدر المكررة.`)}</p>}
+    {saved !== null && <p role="status">{filePreview
+      ? label(`Kept ${saved} records in this preview. Export a backup before reloading.`, `تم الاحتفاظ بـ ${saved} بنداً في هذه المعاينة. صدّر نسخة قبل إعادة التحميل.`)
+      : label(`Saved ${saved} records. Repeated source lines are skipped.`, `تم حفظ ${saved} بنداً. يتم تجاهل أسطر المصدر المكررة.`)}</p>}
 
     <form onSubmit={(event) => {
       event.preventDefault(); setError(false); setReviewed(false); setSaved(null);

@@ -4,6 +4,12 @@ Open the **Commitments** view (`/#commitments`) in the built app or standalone
 HTML. This implements a bounded portion of the README's P0/P1 workflow without
 an inference provider, microphone, production records or database migration.
 
+For reload persistence, use the app from a stable local HTTP origin (`npm run dev`
+or `npm run preview`). Browsers do not define portable localStorage behavior for
+`file:` URLs; CI reproduced a lost register after reloading a file preview. The
+file view explicitly warns about this limitation and asks users to export before
+leaving. JSON restore remains available. See [browser storage behavior](https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage).
+
 1. Enter a meeting/source name, date, and labelled text minutes.
 2. Extract and review the proposed records beside their exact source lines.
 3. Correct any unparsed lines in the text or explicitly acknowledge their
@@ -63,8 +69,10 @@ Run `npm ci`, `npm run typecheck`, `npm test`, and `npm run build`.
 CI also runs `scripts/verify-commitments-browser.mjs` with its existing disposable
 Playwright installation (`BROWSER_TOOL_ROOT`). Four synthetic browser cases cover
 English/Arabic at desktop/mobile widths, review gating, unparsed lines,
-source retention, closure/reload, backup/restore and invalid backups, with all
-HTTP(S) requests blocked and asserted absent. Unit/component tests cover strict
+source retention, closure/reload, backup/restore and invalid backups on a loopback
+HTTP origin. Only the local standalone HTML is served; all other requests are
+blocked and asserted absent. A separate file-preview check verifies its storage
+warning. Unit/component tests cover strict
 dates, missing metadata, duplicate captures, quota/corrupt storage, malformed
 backups, weekly boundaries and changed-source invalidation.
 
