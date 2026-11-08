@@ -2,8 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { writeFile, access } from 'node:fs/promises';
 import { VoiceBridge, validateWave } from './VoiceBridge.mjs';
-function wave() { const b = Buffer.alloc(16044); b.write('RIFF'); b.writeUInt32LE(b.length - 8, 4); b.write('WAVE', 8); b.write('fmt ', 12); b.writeUInt32LE(16, 16); b.writeUInt16LE(1, 20); b.writeUInt16LE(1, 22); b.writeUInt32LE(16000, 24); b.writeUInt16LE(16, 34); b.write('data', 36); b.writeUInt32LE(16000, 40); return b; }
-test('rejects arbitrary/oversized/non-PCM audio', () => { assert.throws(() => validateWave(Buffer.from('fake'))); const b = wave(); b.writeUInt32LE(48000, 24); assert.throws(() => validateWave(b)); });
+function wave() { const b = Buffer.alloc(16044); b.write('RIFF'); b.writeUInt32LE(b.length - 8, 4); b.write('WAVE', 8); b.write('fmt ', 12); b.writeUInt32LE(16, 16); b.writeUInt16LE(1, 20); b.writeUInt16LE(1, 22); b.writeUInt32LE(16000, 24); b.writeUInt32LE(32000, 28); b.writeUInt16LE(2, 32); b.writeUInt16LE(16, 34); b.write('data', 36); b.writeUInt32LE(16000, 40); return b; }
+test('rejects arbitrary/oversized/non-PCM audio', () => { assert.throws(() => validateWave(Buffer.from('fake'))); validateWave(wave()); for (const [offset, value] of [[4, 0], [16, 18], [24, 48000], [28, 0], [32, 0]]) { const b = wave(); b.writeUInt32LE(value, offset); assert.throws(() => validateWave(b)); } assert.throws(() => validateWave(Buffer.alloc(9_600_046))); });
 test('local CLI transcription handles Arabic and English, deletes audio, and never invokes a shell', async () => {
   for (const language of ['ar', 'en']) {
     let temp;

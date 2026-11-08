@@ -5,7 +5,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 const runFile = promisify(execFile);
 export function validateWave(bytes) {
-  if (bytes.length < 6444 || bytes.length > 10_000_000 || bytes.toString('ascii', 0, 4) !== 'RIFF' || bytes.toString('ascii', 8, 12) !== 'WAVE' || bytes.toString('ascii', 12, 16) !== 'fmt ' || bytes.readUInt16LE(20) !== 1 || bytes.readUInt16LE(22) !== 1 || bytes.readUInt32LE(24) !== 16000 || bytes.readUInt16LE(34) !== 16 || bytes.toString('ascii', 36, 40) !== 'data' || bytes.readUInt32LE(40) !== bytes.length - 44) throw new Error('Use mono 16 kHz PCM16 WAV audio, 0.2–300 seconds, maximum 10 MB.');
+  if (bytes.length < 6444 || bytes.length > 9_600_044 || (bytes.length - 44) % 2 !== 0 || bytes.readUInt32LE(4) !== bytes.length - 8 || bytes.readUInt32LE(16) !== 16 || bytes.readUInt32LE(28) !== 32000 || bytes.readUInt16LE(32) !== 2 || bytes.toString('ascii', 0, 4) !== 'RIFF' || bytes.toString('ascii', 8, 12) !== 'WAVE' || bytes.toString('ascii', 12, 16) !== 'fmt ' || bytes.readUInt16LE(20) !== 1 || bytes.readUInt16LE(22) !== 1 || bytes.readUInt32LE(24) !== 16000 || bytes.readUInt16LE(34) !== 16 || bytes.toString('ascii', 36, 40) !== 'data' || bytes.readUInt32LE(40) !== bytes.length - 44) throw new Error('Use mono 16 kHz PCM16 WAV audio, 0.2–300 seconds, maximum 10 MB.');
 }
 export class VoiceBridge {
   constructor({ executable = process.env.EXECFLOW_WHISPER_EXE, model = process.env.EXECFLOW_WHISPER_MODEL, runner = runFile, aiModel = process.env.EXECFLOW_LOCAL_MODEL, fetcher = fetch } = {}) { Object.assign(this, { executable, model, runner, aiModel, fetcher }); this.busy = false; }
