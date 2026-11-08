@@ -27,7 +27,7 @@ for (const lang of ['en', 'ar']) {
   };
   const stop = async () => { await context.close(); context = null; await new Promise(r => { server.close(r); server.closeAllConnections(); }); server = null; };
   try {
-    server = await startLocalApp();
+    server = await startLocalApp({ services: false });
     let page = await launch();
     await page.goto(APP_URL);
     await page.evaluate(lang => localStorage.setItem('exeflow.rmd.lang', lang), lang); await page.reload();
@@ -55,7 +55,7 @@ for (const lang of ['en', 'ar']) {
     assert.deepEqual(JSON.parse(await readFile(backupPath, 'utf8')), original);
     await page.reload(); assert.equal(await status().inputValue(), 'closed');
     await stop(); // Entire browser process and server are stopped, not just a tab.
-    server = await startLocalApp(); page = await launch(); await page.goto(APP_URL);
+    server = await startLocalApp({ services: false }); page = await launch(); await page.goto(APP_URL);
     assert.equal(await status().inputValue(), 'closed');
     assert.deepEqual(await page.evaluate(key => JSON.parse(localStorage.getItem(key)), key), original);
     await page.evaluate(key => localStorage.removeItem(key), key); await page.reload();
@@ -68,7 +68,7 @@ for (const lang of ['en', 'ar']) {
     await restore().setInputFiles({ name: 'Invalid.json', mimeType: 'application/json', buffer: Buffer.from('{}') });
     await page.getByRole('alert').waitFor();
     assert.deepEqual(await page.evaluate(key => JSON.parse(localStorage.getItem(key)), key), original);
-    await stop(); server = await startLocalApp(); page = await launch(); await page.goto(APP_URL);
+    await stop(); server = await startLocalApp({ services: false }); page = await launch(); await page.goto(APP_URL);
     assert.equal(await status().inputValue(), 'closed');
     // Cancellation must preserve the live register even for an empty valid backup.
     await restore().setInputFiles({ name: 'Empty.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ schemaVersion: 1, records: [] })) });

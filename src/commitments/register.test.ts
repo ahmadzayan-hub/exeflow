@@ -95,3 +95,9 @@ describe("register persistence and closure", () => {
     expect(weeklyBrief(emptyRegister(), "2026-11-08", "en")).not.toContain("NaN");
   });
 });
+it("preserves original integration evidence in backups and briefs, and rejects malformed evidence", () => {
+  const r = register(); r.records[0].source.original = { kind: "email", text: "Synthetic original mail excerpt", reference: "https://example.test/message" };
+  expect(isRegister(r)).toBe(true); saveRegister(r); expect(readRegister().register.records[0].source.original).toEqual(r.records[0].source.original);
+  expect(weeklyBrief(r, "2026-11-09", "en")).toContain("Synthetic original mail excerpt");
+  r.records[0].source.original.text = ""; expect(isRegister(r)).toBe(false);
+});

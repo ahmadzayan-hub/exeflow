@@ -5,6 +5,7 @@ import {
   readRegister, saveRegister, weeklyBrief, STORAGE_KEY, type Candidate, type Register, type Status,
 } from "./register";
 import { filterCommitments, registerSummary, type RegisterView } from "./Workbench";
+import { IntegrationPanel, type SourceEvidence } from "./IntegrationPanel";
 import "./commitments.css";
 
 function download(name: string, text: string, type: string) {
@@ -34,6 +35,9 @@ export function CommitmentsView({ lang }: { lang: Lang }) {
   const importRequest = useRef(0);
   const [registerView, setRegisterView] = useState<RegisterView>("all");
   const [search, setSearch] = useState("");
+  const [sourceEvidence, setSourceEvidence] = useState<SourceEvidence | null>(null);
+  const [bridge, setBridge] = useState<((next: Register) => Promise<void>) | null>(null);
+  const [cacheWarning, setCacheWarning] = useState(false);
   const today = localToday();
   const summary = registerSummary(register, today);
   const visible = filterCommitments(register.records, registerView, search, today);
@@ -41,16 +45,17 @@ export function CommitmentsView({ lang }: { lang: Lang }) {
   const unknown = label("Not specified", "غير محدد");
 
   function resetPreview() { setPreview(null); setReviewed(false); setSaved(null); }
-  function persist(next: Register) {
+  async function persist(next: Register) {
     try {
-      saveRegister(next); setRegister(next); setStorageBlocked(false); setError(false); setPendingBackup(null); importRequest.current++; return true;
+      if (bridge) await bridge(next);
+      try { saveRegister(next); setCacheWarning(false); } catch (e) { if (!bridge) throw e; setCacheWarning(true); } setRegister(next); setStorageBlocked(false); setError(false); setPendingBackup(null); importRequest.current++; return true;
     } catch { setError(true); return false; }
   }
-  function accept() {
+  async function accept() {
     if (!preview || !reviewed || storageBlocked) return;
     try {
       const next = acceptCandidates(register, preview.candidates, today);
-      if (persist(next)) { setSaved(next.records.length - register.records.length); setPreview(null); setReviewed(false); }
+      if (await persist(next)) { setSaved(next.records.length - register.records.length); setPreview(null); setReviewed(false); }
     } catch { setError(true); }
   }
   async function importBackup(file: File) {
@@ -64,9 +69,9 @@ export function CommitmentsView({ lang }: { lang: Lang }) {
       setPendingBackup(parsed);
     } catch { if (request === importRequest.current) setError(true); }
   }
-  function restoreBackup() {
+  async function restoreBackup() {
     if (!pendingBackup || (storageBlocked && !(recoveryDownloaded && recoveryVerified))) return;
-    if (persist(pendingBackup)) { resetPreview(); setSaved(pendingBackup.records.length); }
+    if (await persist(pendingBackup)) { resetPreview(); setSaved(pendingBackup.records.length); }
   }
   function exportOriginal() {
     try {
@@ -95,14 +100,17 @@ export function CommitmentsView({ lang }: { lang: Lang }) {
       <button className="btn" type="button" disabled={storageBlocked && !(recoveryDownloaded && recoveryVerified)} onClick={restoreBackup}>{label("Confirm restore", "تأكيد الاستعادة")}</button>
       <button className="btn" type="button" onClick={() => { importRequest.current++; setPendingBackup(null); }}>{label("Cancel restore", "إلغاء الاستعادة")}</button>
     </section>}
-    {error && <p role="alert">{label("Could not save or read the register. Check the backup format, date, record limit (1,000), and browser storage. Existing saved data has not been replaced.", "تعذّر حفظ السجل أو قراءته. تحقق من صيغة النسخة والتاريخ وحد السجلات (١٠٠٠) وتخزين المتصفح. لم يتم استبدال البيانات المحفوظة.")}</p>}
+    {error && <p role="alert">{label("The operation could not be confirmed. Check the backup, record limit (1,000), browser storage and local service before retrying. Export a recovery copy when possible.", "تعذّر تأكيد العملية. تحقق من النسخة وحد السجلات (١٠٠٠) وتخزين المتصفح والخدمة المحلية قبل المحاولة مجدداً. صدّر نسخة استرداد إن أمكن.")}</p>}
     {saved !== null && <p role="status">{filePreview
       ? label(`Kept ${saved} records in this preview. Export a backup before reloading.`, `تم الاحتفاظ بـ ${saved} بنداً في هذه المعاينة. صدّر نسخة قبل إعادة التحميل.`)
       : label(`Saved ${saved} records. Repeated source lines are skipped.`, `تم حفظ ${saved} بنداً. يتم تجاهل أسطر المصدر المكررة.`)}</p>}
 
+    {cacheWarning && <p role="alert">{label("Saved in the local service, but the browser cache failed. Export a JSON backup.", "حُفظ السجل في الخدمة المحلية، وتعذر تحديث تخزين المتصفح. صدّر نسخة JSON.")}</p>}
+    <IntegrationPanel lang={lang} register={register} blocked={storageBlocked} onBridge={sync => setBridge(() => sync)} onPrepared={(source, lines) => { setSourceEvidence(source); setName(source.title.slice(0, 200)); setMinutes(lines); resetPreview(); }} />
+    {sourceEvidence && <aside><h2>{label("Original source for these proposals", "المصدر الأصلي لهذه المقترحات")}</h2><blockquote>{sourceEvidence.text}</blockquote><p>{sourceEvidence.reference}</p><button type="button" className="btn" onClick={() => { setSourceEvidence(null); resetPreview(); }}>{label("Clear source link", "إلغاء ربط المصدر")}</button></aside>}
     <form onSubmit={(event) => {
       event.preventDefault(); setError(false); setReviewed(false); setSaved(null);
-      try { setPreview(extractMinutes(minutes, name, date)); } catch { setPreview(null); setError(true); }
+      try { const extracted = extractMinutes(minutes, name, date); setPreview({ ...extracted, candidates: extracted.candidates.map(c => sourceEvidence ? { ...c, source: { ...c.source, original: { kind: sourceEvidence.kind, text: sourceEvidence.text, reference: sourceEvidence.reference } } } : c) }); } catch { setPreview(null); setError(true); }
     }} className="capture-form no-print">
       <h2>{label("Capture from minutes", "التقاط من المحضر")}</h2>
       <div className="capture-fields">
@@ -158,7 +166,8 @@ export function CommitmentsView({ lang }: { lang: Lang }) {
         <p>{label("Owner", "المسؤول")}: {r.owner ?? unknown} · {label("Due", "الاستحقاق")}: {r.due ?? unknown}</p>
         <p>{label("Priority", "الأولوية")}: {r.priority === "high" ? label("High", "عالية") : label("Normal", "عادية")}{r.dependency && ` · ${label("Dependency", "الاعتماد")}: ${r.dependency}`}</p>
         <p>{r.source.name} · {r.source.date} · {label("Line", "سطر")} {r.source.line}</p>
-        <blockquote>{r.source.quote}</blockquote>
+        <p>{r.source.original ? label("Reviewed extraction", "الاستخراج المراجع") : label("Source quote", "اقتباس المصدر")}</p><blockquote>{r.source.quote}</blockquote>
+        {r.source.original && <><p>{label("Original source excerpt", "مقتطف المصدر الأصلي")}</p><blockquote>{r.source.original.text}</blockquote><p>{r.source.original.reference}</p></>}
         <label>{label("Status", "الحالة")}<select aria-label={`${label("Status", "الحالة")}: ${r.text}`} value={r.status} disabled={storageBlocked} onChange={(e) => {
           try { persist(changeStatus(register, r.id, e.target.value as Status, today)); } catch { setError(true); }
         }}>

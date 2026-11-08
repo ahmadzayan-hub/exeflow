@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
-import { mkdtemp, mkdir, copyFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, mkdir, copyFile, cp, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -16,11 +16,12 @@ async function start({ portable = false, missingBuild = false, pathOnly = false 
   await mkdir(join(sub, 'scripts'), { recursive: true });
   await copyFile(new URL('../StartExecFlow.cmd', import.meta.url), join(sub, 'StartExecFlow.cmd'));
   await copyFile(new URL('./LocalLauncher.mjs', import.meta.url), join(sub, 'scripts', 'LocalLauncher.mjs'));
+  await cp(new URL('./services/', import.meta.url), join(sub, 'scripts', 'services'), { recursive: true });
   if (!missingBuild) {
-    await mkdir(join(sub, 'dist')); await copyFile(new URL('../dist/rmd-dashboard.html', import.meta.url), join(sub, 'dist', 'rmd-dashboard.html'));
+    await mkdir(join(sub, 'dist')); await copyFile(new URL('../dist/CommitmentRuntime.mjs', import.meta.url), join(sub, 'dist', 'CommitmentRuntime.mjs')); await copyFile(new URL('../dist/rmd-dashboard.html', import.meta.url), join(sub, 'dist', 'rmd-dashboard.html'));
   }
   if (portable) { await mkdir(join(sub, 'Runtime')); await copyFile(process.execPath, join(sub, 'Runtime', 'node.exe')); }
-  const env = { ...process.env, EXECFLOW_OPEN_BROWSER: '0' };
+  const env = { ...process.env, EXECFLOW_OPEN_BROWSER: '0', EXECFLOW_DATA_DIR: join(sub, 'PrivateData') };
   if (portable || pathOnly) env.Path = env.PATH = join(process.env.SystemRoot, 'System32');
   // shell is cmd.exe explicitly; the full command path is quoted, including & and spaces.
   const child = spawn(process.env.ComSpec ?? 'cmd.exe', ['/d', '/s', '/c', `""${join(sub, 'StartExecFlow.cmd')}""`], { env, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, windowsVerbatimArguments: true });

@@ -11,7 +11,7 @@ export interface Candidate {
   due: string | null;
   priority: "normal" | "high";
   dependency: string | null;
-  source: { name: string; date: string; line: number; quote: string };
+  source: { name: string; date: string; line: number; quote: string; original?: { kind: "voice" | "email" | "calendar"; text: string; reference: string } };
 }
 export interface Commitment extends Candidate {
   id: string;
@@ -109,6 +109,7 @@ export function isRegister(value: unknown): value is Register {
     if (r.status === "closed" ? !validDate(r.closedOn) || r.closedOn < r.capturedOn : r.closedOn !== null) return false;
     const s = r.source;
     if (!obj(s) || !text(s.name, 200) || !validDate(s.date) || !Number.isInteger(s.line) || Number(s.line) < 1 || !text(s.quote, 2_000) || /[\r\n]/.test(s.quote)) return false;
+    if (s.original != null && (!obj(s.original) || !["voice", "email", "calendar"].includes(s.original.kind as string) || !text(s.original.text, 2_000) || typeof s.original.reference !== "string" || s.original.reference.length > 2048)) return false;
     // A backup must retain the exact extraction, not just a plausible source label.
     const parsed = extractMinutes(s.quote, s.name, s.date).candidates[0];
     if (!parsed || (["kind", "text", "owner", "due", "priority", "dependency"] as const).some((k) => parsed[k] !== r[k])) return false;
@@ -157,7 +158,7 @@ export function weeklyBrief(register: Register, asOf: string, lang: Lang): strin
     `${en ? "Closure rate (closed / all recorded commitments)" : "معدل الإغلاق (المغلق / كل الالتزامات المسجلة)"}: ${rate === null ? "—" : `${rate}%`}`,
     ...groups.flatMap(([label, records]) => [
       `\n## ${label} (${records.length})`,
-      ...records.map((r) => `- ${clean(r.text)} | ${en ? "Owner" : "المسؤول"}: ${r.owner ?? "—"} | ${en ? "Due" : "الاستحقاق"}: ${r.due ?? "—"} | ${en ? "Priority" : "الأولوية"}: ${en ? r.priority : r.priority === "high" ? "عالية" : "عادية"}${r.dependency ? ` | ${en ? "Dependency" : "الاعتماد"}: ${clean(r.dependency)}` : ""}\n  ${en ? "Source" : "المصدر"}: ${clean(r.source.name)}, ${r.source.date}, ${en ? "line" : "سطر"} ${r.source.line}\n  > ${clean(r.source.quote)}`),
+      ...records.map((r) => `- ${clean(r.text)} | ${en ? "Owner" : "المسؤول"}: ${r.owner ?? "—"} | ${en ? "Due" : "الاستحقاق"}: ${r.due ?? "—"} | ${en ? "Priority" : "الأولوية"}: ${en ? r.priority : r.priority === "high" ? "عالية" : "عادية"}${r.dependency ? ` | ${en ? "Dependency" : "الاعتماد"}: ${clean(r.dependency)}` : ""}\n  ${en ? "Source" : "المصدر"}: ${clean(r.source.name)}, ${r.source.date}, ${en ? "line" : "سطر"} ${r.source.line}\n  > ${clean(r.source.quote)}${r.source.original ? `\n  ${en ? "Original source" : "المصدر الأصلي"}: ${clean(r.source.original.text)}` : ""}`),
     ]),
   ].join("\n\n");
 }

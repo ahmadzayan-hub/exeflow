@@ -1,0 +1,32 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { createServer } from 'node:http';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { createLocalServices } from './LocalServices.mjs';
+import { isRegister } from '../../dist/CommitmentRuntime.mjs';
+test('actual local HTTP routes enforce session, origin, schema and human write confirmation', async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'ExecFlowApi')); const graph = { status: () => ({ connected: false, delivery: false }), disconnect() {}, calendar: async () => { throw new Error('should not call'); } }; const voice = { status: async () => ({ transcription: false, interpretation: false }) };
+  const local = await createLocalServices({ directory: dir, validator: isRegister, graph, voice, intervalMs: 0 }); let origin;
+  const server = createServer((req, res) => { void local.handle(req, res, origin); }); await new Promise(r => server.listen(0, '127.0.0.1', r)); origin = `http://127.0.0.1:${server.address().port}`;
+  t.after(async () => { await local.close(); await new Promise(r => { server.close(r); server.closeAllConnections(); }); await rm(dir, { recursive: true, force: true }); });
+  assert.equal((await fetch(origin + '/api/local/session')).status, 403);
+  const token = (await (await fetch(origin + '/api/local/session', { headers: { 'X-ExecFlow-Pairing': local.pairingCode } })).json()).token;
+  assert.equal((await fetch(origin + '/api/local/state')).status, 403);
+  const headers = { 'X-ExecFlow-Session': token, Origin: origin, 'Content-Type': 'application/json' };
+  assert.equal((await fetch(origin + '/api/local/state', { headers: { ...headers, Origin: 'https://attacker.invalid' } })).status, 403);
+  assert.equal((await fetch(origin + '/api/local/state', { headers: { 'X-ExecFlow-Session': token } })).status, 200);
+  assert.equal((await fetch(origin + '/api/local/register', { method: 'PUT', headers, body: JSON.stringify({ register: {}, expectedRevision: 0 }) })).status, 400);
+  assert.equal((await fetch(origin + '/api/local/calendar', { method: 'POST', headers, body: JSON.stringify({ recordId: 'test', confirmed: false }) })).status, 400);
+  const r = await fetch(origin + '/api/local/register', { method: 'PUT', headers, body: JSON.stringify({ register: { schemaVersion: 1, records: [] }, expectedRevision: 0 }) }); assert.equal(r.status, 200); assert.equal((await r.json()).registerRevision, 1);
+});
+test('enabled monitoring scans automatically while the local server is running', async t => {
+  const directory = await mkdtemp(join(tmpdir(), 'ExecFlowTimer')); let complete; const sent = new Promise(resolve => { complete = resolve; });
+  const graph = { status: () => ({ delivery: true, account: { id: 'synthetic-account' } }), disconnect() {}, send: async () => { complete(); return { accepted: true }; } };
+  const local = await createLocalServices({ directory, validator: isRegister, graph, intervalMs: 20 });
+  t.after(async () => { await local.close(); await rm(directory, { recursive: true, force: true }); });
+  const runtime = await import('../../dist/CommitmentRuntime.mjs'); const register = runtime.acceptCandidates(runtime.emptyRegister(), runtime.extractMinutes('Action: Timer test | Due: 2020-01-01', 'Synthetic timer', '2020-01-01').candidates, '2020-01-01');
+  await local.automation.sync(register, 0); await local.automation.configure({ enabled: true, email: true, recipients: ['test@example.test'], remindAfterDays: 1, escalateAfterDays: 3 }, true);
+  await Promise.race([sent, new Promise((_, reject) => { const timer = setTimeout(() => reject(new Error('Automatic scan did not run')), 2000); timer.unref(); })]);
+});

@@ -24,7 +24,7 @@ export function App() {
   const [filters, setFilters] = useState<FilterState>(emptyFilters);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<"portfolio" | "reporting" | "commitments">(() => (location.hash === "#reporting" ? "reporting" : location.hash === "#commitments" ? "commitments" : "portfolio"));
+  const [view, setView] = useState<"portfolio" | "reporting" | "commitments">(() => (location.hash === "#reporting" ? "reporting" : location.hash.startsWith("#commitments") ? "commitments" : "portfolio"));
 
   useEffect(() => {
     location.hash = view === "portfolio" ? "" : `#${view}`;

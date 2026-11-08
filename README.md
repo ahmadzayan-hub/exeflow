@@ -86,9 +86,9 @@ the monthly update cycle.
 
 ## Local Windows distribution
 
-[ExecFlow 0.2.0 local prerelease](https://github.com/ahmadzayan-hub/exeflow/releases/tag/v0.2.0) provides the fixed-origin launcher, reviewed commitment capture/recovery, director follow-up indicators, search and filters. The release is published only after Windows and Linux CI pass, including extracting and running the actual package. Its portfolio is empty demonstration data; import approved JSON locally. Node.js LTS 22+ remains a prerequisite.
+[ExecFlow 0.3.0 local prerelease](https://github.com/ahmadzayan-hub/exeflow/releases/tag/v0.3.0) provides the fixed-origin launcher, reviewed commitment capture/recovery, director follow-up indicators, search and filters. The release is published only after Windows and Linux CI pass, including extracting and running the actual package. Its portfolio is empty demonstration data; import approved JSON locally. Node.js LTS 22+ remains a prerequisite.
 
-Read [release scope and installation](docs/Release%20Scope.md). This completes the local labelled-text meeting/register/brief workflow; voice understanding, email/calendar, scheduled notifications, delivered escalation events and multi-user durable records remain separate roadmap work.
+Read [release scope and installation](docs/Release%20Scope.md). This completes the local labelled-text meeting/register/brief workflow; local voice/interpretation, Microsoft Graph mail/calendar and automatic reminder/escalation submission are implemented through the local runtime, with explicit setup and review. See [local integrations](docs/Local%20Integrations.md). Live account consent, delivery and user-device speech acceptance remain operational gates; no successful live integration is inferred from synthetic tests.
 
 ```text
 npm run build:release

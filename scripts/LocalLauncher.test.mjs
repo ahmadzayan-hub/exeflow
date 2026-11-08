@@ -18,7 +18,7 @@ test('missing build gives actionable error', async () => {
   await assert.rejects(startLocalApp({ htmlPath: '/missing/ExecFlow.html', port: 0 }), /Built app missing.*npm ci.*npm run build/);
 });
 test('server boundaries, occupied port, and restart', async t => {
-  let server = await startLocalApp({ port: 0 });
+  let server = await startLocalApp({ port: 0, services: false });
   const port = server.address().port;
   t.after(() => new Promise(resolve => { server.close(resolve); server.closeAllConnections(); }));
   await t.test('only binds IPv4 loopback', () => assert.equal(server.address().address, HOST));
@@ -34,18 +34,18 @@ test('server boundaries, occupied port, and restart', async t => {
   });
   await t.test('rejects writes', async () => assert.equal((await get(port, '/', { method: 'POST' })).status, 405));
   await t.test('occupied port fails without fallback or killing owner', async () => {
-    await assert.rejects(startLocalApp({ port }), /already in use.*No other process was stopped/);
+    await assert.rejects(startLocalApp({ port, services: false }), /already in use.*No other process was stopped/);
     assert.equal((await get(port, '/')).status, 200);
   });
   await t.test('shutdown and reopen same port', async () => {
     await new Promise(resolve => { server.close(resolve); server.closeAllConnections(); });
-    server = await startLocalApp({ port });
+    server = await startLocalApp({ port, services: false });
     assert.equal((await get(port, '/')).status, 200);
   });
 });
 
 for (const stopMode of ['Enter', 'SIGINT']) test(`packaged CLI works from a folder with spaces without node_modules and stops with ${stopMode}`, { skip: stopMode === 'SIGINT' && process.platform === 'win32' ? 'Windows process.kill does not simulate console Ctrl+C; use Enter acceptance and manual console check.' : false }, async () => {
-  const { mkdtemp, mkdir, copyFile, rm } = await import('node:fs/promises');
+  const { mkdtemp, mkdir, copyFile, cp, rm } = await import('node:fs/promises');
   const { tmpdir } = await import('node:os');
   const { join } = await import('node:path');
   const { spawn } = await import('node:child_process');
@@ -55,8 +55,10 @@ for (const stopMode of ['Enter', 'SIGINT']) test(`packaged CLI works from a fold
   try {
     await mkdir(join(folder, 'scripts')); await mkdir(join(folder, 'dist'));
     await copyFile(new URL('./LocalLauncher.mjs', import.meta.url), join(folder, 'scripts', 'LocalLauncher.mjs'));
+    await cp(new URL('./services/', import.meta.url), join(folder, 'scripts', 'services'), { recursive: true });
+    await copyFile(new URL('../dist/CommitmentRuntime.mjs', import.meta.url), join(folder, 'dist', 'CommitmentRuntime.mjs'));
     await copyFile(new URL('../dist/rmd-dashboard.html', import.meta.url), join(folder, 'dist', 'rmd-dashboard.html'));
-    child = spawn(process.execPath, [join(folder, 'scripts', 'LocalLauncher.mjs')], { stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, EXECFLOW_OPEN_BROWSER: '0' } });
+    child = spawn(process.execPath, [join(folder, 'scripts', 'LocalLauncher.mjs')], { stdio: ['pipe', 'pipe', 'pipe'], env: { ...process.env, EXECFLOW_OPEN_BROWSER: '0', EXECFLOW_DATA_DIR: join(folder, 'PrivateData') } });
     let output = ''; child.stdout.on('data', c => { output += c; }); child.stderr.on('data', c => { output += c; });
     // Wait for the app's own readiness message, not an arbitrary sleep.
     await new Promise((resolve, reject) => {
@@ -71,7 +73,7 @@ for (const stopMode of ['Enter', 'SIGINT']) test(`packaged CLI works from a fold
     const [code] = await Promise.race([exited, new Promise((_, reject) => { const timer = setTimeout(() => reject(new Error('Launcher exit timed out: ' + output)), 5000); timer.unref(); })]);
     assert.equal(code, 0); assert.match(output, /ExecFlow stopped/);
     child = null;
-    const restarted = await startLocalApp();
+    const restarted = await startLocalApp({ services: false });
     await new Promise(resolve => { restarted.close(resolve); restarted.closeAllConnections(); });
   } finally { if (child) child.kill(); await rm(folder, { recursive: true, force: true }); }
 });
