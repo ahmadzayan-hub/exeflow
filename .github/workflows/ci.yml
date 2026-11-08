@@ -37,6 +37,13 @@ jobs:
       - run: pip install -e "./server[dev]"
       - run: cd server && python -m pytest -q
       - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: commitments-browser-failure
+          path: artifacts/commitments/*.zip
+          if-no-files-found: ignore
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
         with:
           name: rmd-dashboard
           path: dist/rmd-dashboard.html

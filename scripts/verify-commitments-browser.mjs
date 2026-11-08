@@ -2,14 +2,17 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { mkdir } from 'node:fs/promises';
 const require = createRequire(resolve(process.env.BROWSER_TOOL_ROOT, 'package.json'));
 const { chromium } = require('playwright');
 const browser = await chromium.launch({ headless: true });
 const key = 'exeflow.commitments.v1';
+await mkdir('artifacts/commitments', { recursive: true });
 try {
   for (const lang of ['en', 'ar']) for (const width of [1440, 390]) {
     const en = lang === 'en';
     const context = await browser.newContext({ viewport: { width, height: 900 } });
+    await context.tracing.start({ screenshots: true, snapshots: true });
     await context.addInitScript(({ lang }) => {
       localStorage.setItem('exeflow.rmd.lang', lang);
       localStorage.setItem('exeflow.rmd.portfolio', JSON.stringify({
@@ -42,8 +45,17 @@ try {
     await page.getByRole('status').waitFor();
     const status = page.getByLabel(`${en ? 'Status' : 'الحالة'}: ${item}`, { exact: true });
     await status.selectOption('closed');
+    await page.waitForFunction(key => {
+      const r = JSON.parse(localStorage.getItem(key) ?? 'null');
+      return r?.records.length === 1 && r.records[0].status === 'closed' && location.hash === '#commitments';
+    }, key);
     await page.reload();
-    await status.waitFor(); assert.equal(await status.inputValue(), 'closed');
+    try { await status.waitFor(); } catch (error) {
+      console.error('Synthetic reload diagnostic:', await page.evaluate(key => ({ url: location.href, register: localStorage.getItem(key), body: document.body.innerText.slice(-5000) }), key));
+      await context.tracing.stop({ path: `artifacts/commitments/${lang}-${width}-reload.zip` });
+      throw error;
+    }
+    assert.equal(await status.inputValue(), 'closed');
     const stored = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), key);
     assert.equal(stored.records.length, 1); assert.equal(stored.records[0].source.quote, quote);
     assert.ok(stored.records[0].closedOn);
@@ -61,6 +73,6 @@ try {
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), 'no horizontal overflow');
     assert.deepEqual(network, [], 'capture, save and brief stay offline'); assert.deepEqual(errors, []);
     console.log(`PASS commitments ${lang}/${width}: review gate, unresolved line, source preservation, closure, reload, backup/restore, invalid backup, no network or overflow`);
-    await context.close();
+    await context.tracing.stop(); await context.close();
   }
 } finally { await browser.close(); }
