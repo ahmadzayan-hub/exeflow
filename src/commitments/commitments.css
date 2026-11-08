@@ -1,0 +1,15 @@
+.commitments { display: grid; gap: 1.25rem; padding-block: 1rem; }
+.commitments section, .capture-form { display: grid; gap: .75rem; min-width: 0; }
+.commitments label { display: grid; gap: .35rem; }
+.commitments input, .commitments select, .commitments textarea { font: inherit; padding: .6rem; border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); background: var(--surface); min-width: 0; max-width: 100%; }
+.capture-fields, .commitment-actions { display: flex; flex-wrap: wrap; gap: .8rem; align-items: end; }
+.capture-fields > label { flex: 1 1 220px; }
+.commitments .review-consent { display: flex; align-items: baseline; gap: .5rem; }
+.commitments .btn { justify-self: start; }
+.commitments button:disabled { opacity: .55; cursor: not-allowed; }
+.commitment-list, .capture-preview ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: .75rem; }
+.commitment-list li, .capture-preview li { display: grid; gap: .5rem; padding: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow-wrap: anywhere; }
+.commitments blockquote { margin: 0; padding-inline-start: .75rem; border-inline-start: 3px solid var(--accent); white-space: pre-wrap; }
+.capture-example, .weekly-brief { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; margin: 0; padding: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.commitments :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+@media print { .commitments { display: block; } .commitment-list li { break-inside: avoid; } }
