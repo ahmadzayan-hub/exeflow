@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { CommitmentsView } from "./CommitmentsView";
 import { readRegister, STORAGE_KEY } from "./register";
 
@@ -56,4 +56,46 @@ it("renders Arabic capture and unknown fields without transliterating source tex
   fireEvent.submit(screen.getByRole("button", { name: "استخراج للمراجعة" }).closest("form")!);
   expect(screen.getByText("مراجعة العرض")).toBeTruthy();
   expect(screen.getByText(/المسؤول: غير محدد/)).toBeTruthy();
+});
+it("previews a valid backup and cancels without overwriting saved data", async () => {
+  render(<CommitmentsView lang="en" />); capture(); fireEvent.click(screen.getByRole("checkbox"));
+  fireEvent.click(screen.getByRole("button", { name: "Save reviewed records" }));
+  const before = localStorage.getItem(STORAGE_KEY);
+  const file = { size: 32, text: async () => JSON.stringify({ schemaVersion: 1, records: [] }) };
+  fireEvent.change(screen.getByLabelText("Restore backup (replaces this register)"), { target: { files: [file] } });
+  await screen.findByRole("button", { name: "Confirm restore" });
+  expect(localStorage.getItem(STORAGE_KEY)).toBe(before);
+  fireEvent.click(screen.getByRole("button", { name: "Cancel restore" }));
+  expect(localStorage.getItem(STORAGE_KEY)).toBe(before);
+  fireEvent.change(screen.getByLabelText("Restore backup (replaces this register)"), { target: { files: [file] } });
+  fireEvent.click(await screen.findByRole("button", { name: "Confirm restore" }));
+  expect(readRegister().register.records).toHaveLength(0);
+});
+it("requires original-text recovery and acknowledgement before replacing corrupt storage", async () => {
+  localStorage.setItem(STORAGE_KEY, "corrupt synthetic original");
+  render(<CommitmentsView lang="en" />);
+  fireEvent.change(screen.getByLabelText("Restore backup (replaces this register)"), { target: { files: [{ size: 32, text: async () => JSON.stringify({ schemaVersion: 1, records: [] }) }] } });
+  const confirm = await screen.findByRole("button", { name: "Confirm restore" }) as HTMLButtonElement;
+  expect(confirm.disabled).toBe(true);
+  expect(localStorage.getItem(STORAGE_KEY)).toBe("corrupt synthetic original");
+  Object.defineProperty(URL, "createObjectURL", { configurable: true, value: vi.fn(() => "blob:synthetic") });
+  Object.defineProperty(URL, "revokeObjectURL", { configurable: true, value: vi.fn() });
+  vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+  fireEvent.click(screen.getByRole("button", { name: "Download original stored text" }));
+  expect(confirm.disabled).toBe(true);
+  fireEvent.click(screen.getByRole("checkbox"));
+  fireEvent.click(confirm);
+  expect(readRegister().error).toBe(false);
+  expect(readRegister().register.records).toHaveLength(0);
+});
+it("ignores an earlier backup read when a newer file has been selected", async () => {
+  render(<CommitmentsView lang="en" />);
+  let finish!: (value: string) => void;
+  const slow = new Promise<string>(resolve => { finish = resolve; });
+  const input = screen.getByLabelText("Restore backup (replaces this register)");
+  fireEvent.change(input, { target: { files: [{ size: 32, text: () => slow }] } });
+  fireEvent.change(input, { target: { files: [{ size: 2, text: async () => "{}" }] } });
+  await screen.findByRole("alert");
+  await act(async () => { finish(JSON.stringify({ schemaVersion: 1, records: [] })); });
+  await waitFor(() => expect(screen.queryByRole("button", { name: "Confirm restore" })).toBeNull());
 });

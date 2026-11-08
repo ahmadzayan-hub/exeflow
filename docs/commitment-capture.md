@@ -51,7 +51,10 @@ Storage failures are surfaced without a successful-save message. Corrupt stored
 data is preserved and normal captures disabled. Recover the original browser
 storage before restoring a valid backup. **Restore backup replaces this register**
 only after its structure, dates, unique IDs/quotes and source-derived fields
-validate; an invalid backup leaves saved data intact. Export before restoring.
+validate and the user confirms the preview; an invalid backup leaves saved data intact. Export before restoring. A valid backup selection alone does not modify saved data.
+Cancel leaves the register untouched. When stored data is corrupt, download the
+original text and acknowledge that the file is safely saved before confirming.
+An earlier asynchronous file read cannot replace a newer selection.
 Local storage is neither encrypted shared storage nor protection from a person
 editing their own browser data. Use synthetic or approved non-confidential data.
 
@@ -79,3 +82,9 @@ backups, weekly boundaries and changed-source invalidation.
 Actual voice transcription, arbitrary narrative extraction, multi-user durable
 records, approved enterprise data, live notification integrations, and audited
 authorization remain separate work. This feature does not certify those paths.
+
+## Fixed Windows launcher
+
+For the packaged loopback-only launcher, fixed browser origin, shutdown, errors,
+and JSON recovery instructions, see [Windows Local Operation](Windows%20Local%20Operation.md).
+The launcher requires Node.js 22+ but no npm dependencies at runtime.

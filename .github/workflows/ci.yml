@@ -54,3 +54,36 @@ jobs:
           path: artifacts/jarvis/*.png
           if-no-files-found: ignore
           retention-days: 7
+  windows:
+    name: Windows local launcher and recovery
+    runs-on: windows-latest
+    timeout-minutes: 12
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build
+      - run: npm run test:local
+      - run: npm run test:windows
+      - name: Install disposable browser test tools
+        shell: pwsh
+        run: npm install --prefix "$env:RUNNER_TEMP/ExecFlowBrowser" --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.62.1
+      - name: Verify complete browser restart and JSON recovery
+        shell: pwsh
+        run: |
+          $env:BROWSER_TOOL_ROOT = "$env:RUNNER_TEMP/ExecFlowBrowser"
+          $env:EXECFLOW_BROWSER_EXECUTABLE = "${env:ProgramFiles}/Google/Chrome/Application/chrome.exe"
+          if (!(Test-Path $env:EXECFLOW_BROWSER_EXECUTABLE)) { throw "Preinstalled Chrome is unavailable" }
+          node scripts/VerifyLocalPersistence.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: WindowsLocalAcceptance
+          path: artifacts/local/
+          if-no-files-found: warn
+          retention-days: 14
