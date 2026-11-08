@@ -99,3 +99,15 @@ it("ignores an earlier backup read when a newer file has been selected", async (
   await act(async () => { finish(JSON.stringify({ schemaVersion: 1, records: [] })); });
   await waitFor(() => expect(screen.queryByRole("button", { name: "Confirm restore" })).toBeNull());
 });
+it("filters the visible register without changing the backup data", () => {
+  render(<CommitmentsView lang="en" />); capture(); fireEvent.click(screen.getByRole("checkbox"));
+  fireEvent.click(screen.getByRole("button", { name: "Save reviewed records" }));
+  const before = localStorage.getItem(STORAGE_KEY);
+  fireEvent.change(screen.getByLabelText("Search commitments"), { target: { value: "No match" } });
+  expect(screen.queryByLabelText("Status: Review test proposal")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "Reset filters" }));
+  expect(screen.getByLabelText("Status: Review test proposal")).toBeTruthy();
+  fireEvent.change(screen.getByLabelText("Register view"), { target: { value: "closed" } });
+  expect(screen.queryByLabelText("Status: Review test proposal")).toBeNull();
+  expect(localStorage.getItem(STORAGE_KEY)).toBe(before);
+});

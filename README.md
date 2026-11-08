@@ -83,3 +83,14 @@ See [docs/rmd-dashboard.md](docs/rmd-dashboard.md) for the data rules and
 the monthly update cycle.
 
 
+
+## Local Windows distribution
+
+[ExecFlow 0.2.0 local prerelease](https://github.com/ahmadzayan-hub/exeflow/releases/tag/v0.2.0) provides the fixed-origin launcher, reviewed commitment capture/recovery, director follow-up indicators, search and filters. The release is published only after Windows and Linux CI pass, including extracting and running the actual package. Its portfolio is empty demonstration data; import approved JSON locally. Node.js LTS 22+ remains a prerequisite.
+
+Read [release scope and installation](docs/Release%20Scope.md). This completes the local labelled-text meeting/register/brief workflow; voice understanding, email/calendar, scheduled notifications, delivered escalation events and multi-user durable records remain separate roadmap work.
+
+```text
+npm run build:release
+npm run package:windows
+```

@@ -2,8 +2,9 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
+  resolve: { alias: mode === "release" ? [{ find: "./data/portfolio.json", replacement: decodeURIComponent(new URL("./src/data/ReleasePortfolio.json", import.meta.url).pathname).replace(/^\/([A-Za-z]:\/)/, "$1") }] : [] },
   base: "./",
   server: { proxy: { "/api": "http://127.0.0.1:8000" } },
   build: {
@@ -17,4 +18,4 @@ export default defineConfig({
     globals: false,
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
   },
-});
+}));

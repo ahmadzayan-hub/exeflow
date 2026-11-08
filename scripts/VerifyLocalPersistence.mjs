@@ -16,7 +16,7 @@ for (const lang of ['en', 'ar']) {
   let server, context;
   const external = [], errors = [];
   const launch = async () => {
-    context = await chromium.launchPersistentContext(profile, { headless: true, ...(process.env.EXECFLOW_BROWSER_EXECUTABLE ? { executablePath: process.env.EXECFLOW_BROWSER_EXECUTABLE } : {}), viewport: { width: en ? 1440 : 390, height: 900 } });
+    context = await chromium.launchPersistentContext(profile, { headless: true, ...(process.env.EXECFLOW_BROWSER_EXECUTABLE ? { executablePath: process.env.EXECFLOW_BROWSER_EXECUTABLE } : {}), viewport: { width: en ? 1440 : 360, height: 900 } });
     await context.route('**/*', route => {
       if (!route.request().url().startsWith('http://127.0.0.1:4173/')) { external.push(route.request().url()); return route.abort(); }
       return route.continue();
@@ -42,6 +42,13 @@ for (const lang of ['en', 'ar']) {
     await status().selectOption('closed');
     await page.waitForFunction(key => JSON.parse(localStorage.getItem(key)).records[0].status === 'closed', key);
     const original = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), key);
+    await page.getByLabel(en ? 'Search commitments' : 'البحث في الالتزامات', { exact: true }).fill('No synthetic match');
+    assert.equal(await status().count(), 0);
+    await page.getByRole('button', { name: en ? 'Reset filters' : 'إلغاء التصفية', exact: true }).click();
+    assert.equal(await status().inputValue(), 'closed');
+    await page.getByLabel(en ? 'Register view' : 'عرض السجل', { exact: true }).selectOption('waiting');
+    assert.equal(await status().count(), 0);
+    await page.getByRole('button', { name: en ? 'Reset filters' : 'إلغاء التصفية', exact: true }).click();
     const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: en ? 'Export register backup' : 'تصدير نسخة السجل', exact: true }).click()]);
     const backupPath = resolve(output, en ? 'SyntheticEnglish.json' : 'SyntheticArabic.json');
     await download.saveAs(backupPath);
@@ -79,8 +86,9 @@ for (const lang of ['en', 'ar']) {
     assert.deepEqual(await page.evaluate(key => JSON.parse(localStorage.getItem(key)), key), original);
     await page.reload(); assert.equal(await status().inputValue(), 'closed');
     assert.equal(original.records[0].source.quote, quote); assert.ok(original.records[0].closedOn);
+    assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), 'no horizontal overflow');
     assert.deepEqual(external, []); assert.deepEqual(errors, []);
-    console.log(`PASS ${lang}: capture/review/close, JSON export, reload, full browser+server restart, storage removal, JSON restore, invalid backup nonreplacement, second restart, cancel restore, corrupt-text download and acknowledgement, source preservation, no external requests`);
+    console.log(`PASS ${lang}: capture/review/close, JSON export, reload, full browser+server restart, storage removal, JSON restore, invalid backup nonreplacement, second restart, search/view/reset filters, cancel restore, corrupt-text download and acknowledgement, source preservation, no external requests`);
   } finally {
     if (context) await context.close();
     if (server) await new Promise(r => { server.close(r); server.closeAllConnections(); });

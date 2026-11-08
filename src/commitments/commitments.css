@@ -13,3 +13,7 @@
 .capture-example, .weekly-brief { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; margin: 0; padding: 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
 .commitments :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 @media print { .commitments { display: block; } .commitment-list li { break-inside: avoid; } }
+.commitment-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: .65rem; }
+.commitment-kpis > * { font: inherit; text-align: start; padding: .9rem; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow-wrap: anywhere; }
+.commitment-kpis button { cursor: pointer; }
+.commitment-kpis strong { display: block; font-size: 1.6rem; }

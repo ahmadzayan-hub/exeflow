@@ -4,6 +4,7 @@ import {
   acceptCandidates, changeStatus, extractMinutes, isRegister, localToday, MAX_TEXT,
   readRegister, saveRegister, weeklyBrief, STORAGE_KEY, type Candidate, type Register, type Status,
 } from "./register";
+import { filterCommitments, registerSummary, type RegisterView } from "./Workbench";
 import "./commitments.css";
 
 function download(name: string, text: string, type: string) {
@@ -31,7 +32,11 @@ export function CommitmentsView({ lang }: { lang: Lang }) {
   const [recoveryDownloaded, setRecoveryDownloaded] = useState(false);
   const [recoveryVerified, setRecoveryVerified] = useState(false);
   const importRequest = useRef(0);
+  const [registerView, setRegisterView] = useState<RegisterView>("all");
+  const [search, setSearch] = useState("");
   const today = localToday();
+  const summary = registerSummary(register, today);
+  const visible = filterCommitments(register.records, registerView, search, today);
   const brief = weeklyBrief(register, today, lang);
   const unknown = label("Not specified", "غير محدد");
 
@@ -126,9 +131,29 @@ export function CommitmentsView({ lang }: { lang: Lang }) {
       </>}
     </section>}
 
+    <section aria-labelledby="followup-title">
+      <h2 id="followup-title">{label("Director follow-up", "متابعة المدير")}</h2>
+      <div className="commitment-kpis">
+        <button type="button" onClick={() => setRegisterView("decision")}>{label("Needs my decision", "بانتظار قراري")}: <strong>{summary.decision}</strong></button>
+        <button type="button" onClick={() => setRegisterView("waiting")}>{label("Waiting for others", "بانتظار الآخرين")}: <strong>{summary.waiting}</strong></button>
+        <button type="button" onClick={() => setRegisterView("overdue")}>{label("Overdue", "متأخر")}: <strong>{summary.overdue}</strong></button>
+        <div>{label("Closed this week", "أُغلق هذا الأسبوع")}: <strong>{summary.closedThisWeek}</strong></div>
+        <div>{label("Closure rate", "معدل الإغلاق")}: <strong>{summary.closureRate === null ? label("Unavailable", "غير متاح") : `${summary.closureRate}%`}</strong></div>
+        <div>{label("Mean closure time (days)", "متوسط مدة الإغلاق بالأيام")}: <strong>{summary.meanClosedDays ?? label("Unavailable", "غير متاح")}</strong></div>
+      </div>
+      <p>{label("Current recorded status only; the closure window includes today and the previous six days. No automatic notification or historical audit is implied.", "وفق الحالة المسجلة الحالية فقط؛ تشمل نافذة الإغلاق اليوم والأيام الستة السابقة. لا تُرسل تنبيهات تلقائية ولا يُستنتج سجل تدقيق تاريخي.")}</p>
+      <div className="capture-fields no-print">
+        <label>{label("Search commitments", "البحث في الالتزامات")}<input type="search" value={search} onChange={e => setSearch(e.target.value)} /></label>
+        <label>{label("Register view", "عرض السجل")}<select aria-label={label("Register view", "عرض السجل")} value={registerView} onChange={e => setRegisterView(e.target.value as RegisterView)}>
+          <option value="all">{label("All records", "جميع البنود")}</option><option value="decision">{label("Needs my decision", "بانتظار قراري")}</option><option value="waiting">{label("Waiting for others", "بانتظار الآخرين")}</option><option value="overdue">{label("Overdue", "متأخر")}</option><option value="closed">{label("Closed", "مغلق")}</option><option value="missing">{label("Missing owner or due date", "مسؤول أو تاريخ استحقاق غير محدد")}</option>
+        </select></label>
+        <button className="btn" type="button" onClick={() => { setSearch(""); setRegisterView("all"); }}>{label("Reset filters", "إلغاء التصفية")}</button>
+      </div>
+      <p>{label(`Showing ${visible.length} of ${register.records.length} records.`, `يُعرض ${visible.length} من أصل ${register.records.length} بنداً.`)}</p>
+    </section>
     <section aria-labelledby="register-title">
       <h2 id="register-title">{label("Saved commitments", "الالتزامات المحفوظة")} ({register.records.length})</h2>
-      <ul className="commitment-list">{register.records.map((r) => <li key={r.id}>
+      <ul className="commitment-list">{visible.map((r) => <li key={r.id}>
         <h3>{r.text}</h3>
         <p>{label("Owner", "المسؤول")}: {r.owner ?? unknown} · {label("Due", "الاستحقاق")}: {r.due ?? unknown}</p>
         <p>{label("Priority", "الأولوية")}: {r.priority === "high" ? label("High", "عالية") : label("Normal", "عادية")}{r.dependency && ` · ${label("Dependency", "الاعتماد")}: ${r.dependency}`}</p>
