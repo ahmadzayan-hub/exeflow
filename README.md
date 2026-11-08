@@ -49,6 +49,14 @@ npm run build   # the service serves the built UI at http://127.0.0.1:8000
 
 ## Roadmap
 
+`/#commitments` now provides an offline slice of this workflow: labelled
+English/Arabic text minutes → explicit source review → a browser-local register
+→ closure tracking and a downloadable weekly brief. Owners and dates are copied
+only from explicit fields; ambiguous or unlabelled lines are reported for
+correction. No model, microphone, email/calendar connection or server is used.
+See [commitment capture](docs/commitment-capture.md) for the supported grammar,
+backup/restore, validation and remaining roadmap boundaries.
+
 - **P0 · Capture → Register** — voice/text/minutes → full register with
   owners and due dates, no manual re-entry.
 - **P1 · Closure loop** — follow-ups, escalation, weekly director brief,

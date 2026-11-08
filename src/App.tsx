@@ -14,6 +14,7 @@ import { ProjectCard } from "./components/ProjectCard";
 import { ProjectDetail } from "./components/ProjectDetail";
 import { SummaryTiles } from "./components/SummaryTiles";
 import { ReportingView } from "./reporting/ReportingView";
+import { CommitmentsView } from "./commitments/CommitmentsView";
 
 const seed = seedJson as Portfolio;
 
@@ -23,10 +24,10 @@ export function App() {
   const [filters, setFilters] = useState<FilterState>(emptyFilters);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [view, setView] = useState<"portfolio" | "reporting">(() => (location.hash === "#reporting" ? "reporting" : "portfolio"));
+  const [view, setView] = useState<"portfolio" | "reporting" | "commitments">(() => (location.hash === "#reporting" ? "reporting" : location.hash === "#commitments" ? "commitments" : "portfolio"));
 
   useEffect(() => {
-    location.hash = view === "reporting" ? "#reporting" : "";
+    location.hash = view === "portfolio" ? "" : `#${view}`;
   }, [view]);
 
   useEffect(() => {
@@ -100,6 +101,9 @@ export function App() {
           <button type="button" className={`view-btn ${view === "reporting" ? "active" : ""}`} onClick={() => setView("reporting")}>
             {t("navReporting", lang)}
           </button>
+          <button type="button" className={`view-btn ${view === "commitments" ? "active" : ""}`} onClick={() => setView("commitments")}>
+            {lang === "en" ? "Commitments" : "الالتزامات"}
+          </button>
         </div>
       </nav>
       <div className="page">
@@ -114,7 +118,9 @@ export function App() {
         </div>
       )}
 
-      {view === "reporting" ? (
+      {view === "commitments" ? (
+        <main><CommitmentsView lang={lang} /></main>
+      ) : view === "reporting" ? (
         <main>
           <ReportingView lang={lang} />
         </main>

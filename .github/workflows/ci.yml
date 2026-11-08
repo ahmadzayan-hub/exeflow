@@ -27,6 +27,10 @@ jobs:
         env:
           BROWSER_TOOL_ROOT: ${{ runner.temp }}/exeflow-browser
         run: node scripts/verify-jarvis-browser.mjs
+      - name: Verify offline commitment capture and closure
+        env:
+          BROWSER_TOOL_ROOT: ${{ runner.temp }}/exeflow-browser
+        run: node scripts/verify-commitments-browser.mjs
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
