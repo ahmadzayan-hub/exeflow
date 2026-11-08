@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { Lang } from "../i18n";
 import {
   acceptCandidates, changeStatus, extractMinutes, isRegister, localToday, MAX_TEXT,
-  readRegister, saveRegister, weeklyBrief, type Candidate, type Register, type Status,
+  readRegister, saveRegister, weeklyBrief, STORAGE_KEY, type Candidate, type Register, type Status,
 } from "./register";
 import "./commitments.css";
 
@@ -27,6 +27,10 @@ export function CommitmentsView({ lang }: { lang: Lang }) {
   const [reviewed, setReviewed] = useState(false);
   const [error, setError] = useState(false);
   const [saved, setSaved] = useState<number | null>(null);
+  const [pendingBackup, setPendingBackup] = useState<Register | null>(null);
+  const [recoveryDownloaded, setRecoveryDownloaded] = useState(false);
+  const [recoveryVerified, setRecoveryVerified] = useState(false);
+  const importRequest = useRef(0);
   const today = localToday();
   const brief = weeklyBrief(register, today, lang);
   const unknown = label("Not specified", "غير محدد");
@@ -34,7 +38,7 @@ export function CommitmentsView({ lang }: { lang: Lang }) {
   function resetPreview() { setPreview(null); setReviewed(false); setSaved(null); }
   function persist(next: Register) {
     try {
-      saveRegister(next); setRegister(next); setStorageBlocked(false); setError(false); return true;
+      saveRegister(next); setRegister(next); setStorageBlocked(false); setError(false); setPendingBackup(null); importRequest.current++; return true;
     } catch { setError(true); return false; }
   }
   function accept() {
@@ -45,12 +49,26 @@ export function CommitmentsView({ lang }: { lang: Lang }) {
     } catch { setError(true); }
   }
   async function importBackup(file: File) {
+    const request = ++importRequest.current;
+    setPendingBackup(null); setError(false); setSaved(null); setRecoveryVerified(false);
     try {
       if (file.size > 4_000_000) throw new Error("large-file");
       const parsed: unknown = JSON.parse(await file.text());
+      if (request !== importRequest.current) return;
       if (!isRegister(parsed)) throw new Error("invalid-backup");
-      // A complete explicit restore replaces this register only; never portfolio data.
-      if (persist(parsed)) { resetPreview(); setSaved(parsed.records.length); }
+      setPendingBackup(parsed);
+    } catch { if (request === importRequest.current) setError(true); }
+  }
+  function restoreBackup() {
+    if (!pendingBackup || (storageBlocked && !(recoveryDownloaded && recoveryVerified))) return;
+    if (persist(pendingBackup)) { resetPreview(); setSaved(pendingBackup.records.length); }
+  }
+  function exportOriginal() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw === null) throw new Error("missing-original");
+      download(`CommitmentRecovery${today}.txt`, raw, "text/plain;charset=utf-8");
+      setRecoveryDownloaded(true); setRecoveryVerified(false); setError(false);
     } catch { setError(true); }
   }
 
@@ -62,6 +80,16 @@ export function CommitmentsView({ lang }: { lang: Lang }) {
     )}</p>
     {filePreview && <p className="banner" role="note">{label("This file preview may lose saved records when reloaded. Export a backup before leaving. Open the app through its local server for browser persistence.", "قد تفقد معاينة الملف البنود عند إعادة التحميل. صدّر نسخة احتياطية قبل المغادرة. افتح التطبيق عبر خادمه المحلي للحفظ في المتصفح.")}</p>}
     {storageBlocked && <p role="alert">{label("Stored register is unreadable or storage is unavailable. Existing data was preserved. Recover it before restoring a valid backup; new captures are disabled.", "السجل المخزن غير قابل للقراءة أو التخزين غير متاح. تم الحفاظ على البيانات الموجودة. استعدها قبل تحميل نسخة سليمة؛ إضافة البنود معطلة.")}</p>}
+    {storageBlocked && <div className="no-print">
+      <button className="btn" type="button" onClick={exportOriginal}>{label("Download original stored text", "تنزيل النص الأصلي المخزن")}</button>
+      {recoveryDownloaded && <label><input type="checkbox" checked={recoveryVerified} onChange={e => setRecoveryVerified(e.target.checked)} />{label("I verified that the original text file is saved before replacing it.", "تحققت من حفظ ملف النص الأصلي قبل استبداله.")}</label>}
+    </div>}
+    {pendingBackup && <section className="capture-preview no-print" aria-labelledby="restore-title">
+      <h2 id="restore-title">{label("Review backup before restoring", "مراجعة النسخة قبل الاستعادة")}</h2>
+      <p>{label(`This backup has ${pendingBackup.records.length} records and will replace the current register (${register.records.length} readable records). Export the current register first.`, `تحتوي النسخة على ${pendingBackup.records.length} بنداً وستستبدل السجل الحالي (${register.records.length} بنداً قابلاً للقراءة). صدّر السجل الحالي أولاً.`)}</p>
+      <button className="btn" type="button" disabled={storageBlocked && !(recoveryDownloaded && recoveryVerified)} onClick={restoreBackup}>{label("Confirm restore", "تأكيد الاستعادة")}</button>
+      <button className="btn" type="button" onClick={() => { importRequest.current++; setPendingBackup(null); }}>{label("Cancel restore", "إلغاء الاستعادة")}</button>
+    </section>}
     {error && <p role="alert">{label("Could not save or read the register. Check the backup format, date, record limit (1,000), and browser storage. Existing saved data has not been replaced.", "تعذّر حفظ السجل أو قراءته. تحقق من صيغة النسخة والتاريخ وحد السجلات (١٠٠٠) وتخزين المتصفح. لم يتم استبدال البيانات المحفوظة.")}</p>}
     {saved !== null && <p role="status">{filePreview
       ? label(`Kept ${saved} records in this preview. Export a backup before reloading.`, `تم الاحتفاظ بـ ${saved} بنداً في هذه المعاينة. صدّر نسخة قبل إعادة التحميل.`)

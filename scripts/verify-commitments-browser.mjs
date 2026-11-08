@@ -77,6 +77,7 @@ try {
     ]);
     const backupPath = await backup.path();
     await page.getByLabel(en ? 'Restore backup (replaces this register)' : 'استعادة نسخة (تستبدل هذا السجل)', { exact: true }).setInputFiles(backupPath);
+    await page.getByRole('button', { name: en ? 'Confirm restore' : 'تأكيد الاستعادة', exact: true }).click();
     await page.getByRole('status').waitFor();
     assert.equal(await status.inputValue(), 'closed');
     await page.getByLabel(en ? 'Restore backup (replaces this register)' : 'استعادة نسخة (تستبدل هذا السجل)', { exact: true }).setInputFiles({ name: 'invalid.json', mimeType: 'application/json', buffer: Buffer.from('{}') });

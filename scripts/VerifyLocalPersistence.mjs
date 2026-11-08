@@ -55,6 +55,7 @@ for (const lang of ['en', 'ar']) {
     assert.equal(await status().count(), 0);
     const restore = () => page.getByLabel(en ? 'Restore backup (replaces this register)' : 'استعادة نسخة (تستبدل هذا السجل)', { exact: true });
     await restore().setInputFiles(backupPath);
+    await page.getByRole('button', { name: en ? 'Confirm restore' : 'تأكيد الاستعادة', exact: true }).click();
     assert.equal(await status().inputValue(), 'closed');
     assert.deepEqual(await page.evaluate(key => JSON.parse(localStorage.getItem(key)), key), original);
     await restore().setInputFiles({ name: 'Invalid.json', mimeType: 'application/json', buffer: Buffer.from('{}') });
@@ -62,9 +63,24 @@ for (const lang of ['en', 'ar']) {
     assert.deepEqual(await page.evaluate(key => JSON.parse(localStorage.getItem(key)), key), original);
     await stop(); server = await startLocalApp(); page = await launch(); await page.goto(APP_URL);
     assert.equal(await status().inputValue(), 'closed');
+    // Cancellation must preserve the live register even for an empty valid backup.
+    await restore().setInputFiles({ name: 'Empty.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ schemaVersion: 1, records: [] })) });
+    await page.getByRole('button', { name: en ? 'Cancel restore' : 'إلغاء الاستعادة', exact: true }).click();
+    assert.deepEqual(await page.evaluate(key => JSON.parse(localStorage.getItem(key)), key), original);
+    // Corrupt storage must be downloadable and explicitly acknowledged before replacement.
+    await page.evaluate(key => localStorage.setItem(key, 'Corrupt synthetic original'), key); await page.reload();
+    await restore().setInputFiles(backupPath);
+    const confirm = page.getByRole('button', { name: en ? 'Confirm restore' : 'تأكيد الاستعادة', exact: true });
+    assert.equal(await confirm.isDisabled(), true);
+    const [recovery] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: en ? 'Download original stored text' : 'تنزيل النص الأصلي المخزن', exact: true }).click()]);
+    assert.equal(await readFile(await recovery.path(), 'utf8'), 'Corrupt synthetic original');
+    assert.equal(await confirm.isDisabled(), true);
+    await page.getByRole('checkbox').check(); await confirm.click();
+    assert.deepEqual(await page.evaluate(key => JSON.parse(localStorage.getItem(key)), key), original);
+    await page.reload(); assert.equal(await status().inputValue(), 'closed');
     assert.equal(original.records[0].source.quote, quote); assert.ok(original.records[0].closedOn);
     assert.deepEqual(external, []); assert.deepEqual(errors, []);
-    console.log(`PASS ${lang}: capture/review/close, JSON export, reload, full browser+server restart, storage removal, JSON restore, invalid backup nonreplacement, second restart, source preservation, no external requests`);
+    console.log(`PASS ${lang}: capture/review/close, JSON export, reload, full browser+server restart, storage removal, JSON restore, invalid backup nonreplacement, second restart, cancel restore, corrupt-text download and acknowledgement, source preservation, no external requests`);
   } finally {
     if (context) await context.close();
     if (server) await new Promise(r => { server.close(r); server.closeAllConnections(); });

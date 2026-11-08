@@ -51,7 +51,10 @@ Storage failures are surfaced without a successful-save message. Corrupt stored
 data is preserved and normal captures disabled. Recover the original browser
 storage before restoring a valid backup. **Restore backup replaces this register**
 only after its structure, dates, unique IDs/quotes and source-derived fields
-validate; an invalid backup leaves saved data intact. Export before restoring.
+validate and the user confirms the preview; an invalid backup leaves saved data intact. Export before restoring. A valid backup selection alone does not modify saved data.
+Cancel leaves the register untouched. When stored data is corrupt, download the
+original text and acknowledge that the file is safely saved before confirming.
+An earlier asynchronous file read cannot replace a newer selection.
 Local storage is neither encrypted shared storage nor protection from a person
 editing their own browser data. Use synthetic or approved non-confidential data.
 
