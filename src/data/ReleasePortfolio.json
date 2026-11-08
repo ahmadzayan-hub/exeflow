@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "dataset": "demo",
+  "title": { "en": "ExecFlow", "ar": "متابعة القرارات والالتزامات" },
+  "organisation": { "en": "Local executive workspace", "ar": "مساحة عمل تنفيذية محلية" },
+  "disclaimer": { "en": "Public release with an empty demonstration portfolio. Import your own approved JSON locally. No organisational records are included.", "ar": "إصدار عام بمحفظة توضيحية فارغة. استورد ملف JSON المعتمد محلياً. لا يتضمن الإصدار سجلات مؤسسية." },
+  "reportingPeriod": { "asOf": "2026-11-09", "label": { "en": "Demonstration", "ar": "بيانات توضيحية" } },
+  "projects": []
+}

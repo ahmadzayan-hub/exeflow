@@ -132,7 +132,7 @@ const table = {
   memory: ["Memory", "الذاكرة"],
   memoryHint: ["Definitions, baselines and preferences the agents recall on every run.", "التعريفات وخطوط الأساس والتفضيلات التي يستدعيها الوكلاء في كل تشغيل."],
   addMemory: ["Add", "إضافة"],
-  memoryPlaceholder: ["e.g. TSA target is 99% with a 94% cap per RTA-LETTER-005426", "مثال: هدف TSA هو 99% بسقف 94% وفق RTA-LETTER-005426"],
+  memoryPlaceholder: ["e.g. Synthetic service target is 95% per an approved local source", "مثال: الهدف التجريبي للخدمة 95% وفق مصدر محلي معتمد"],
   memoryUsed: ["Memory used in this run", "الذاكرة المستخدمة في هذا التشغيل"],
   rows: ["rows", "صف"],
   tables: ["tables", "جداول"],
