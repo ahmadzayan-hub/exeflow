@@ -67,7 +67,7 @@ export function CommitmentsView({ lang }: { lang: Lang }) {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw === null) throw new Error("missing-original");
-      download(`CommitmentRecovery${today}.txt`, raw, "text/plain;charset=utf-8");
+      download(`CommitmentRecovery${today.replaceAll("-", "")}.txt`, raw, "text/plain;charset=utf-8");
       setRecoveryDownloaded(true); setRecoveryVerified(false); setError(false);
     } catch { setError(true); }
   }
