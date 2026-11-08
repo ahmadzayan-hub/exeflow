@@ -79,3 +79,9 @@ backups, weekly boundaries and changed-source invalidation.
 Actual voice transcription, arbitrary narrative extraction, multi-user durable
 records, approved enterprise data, live notification integrations, and audited
 authorization remain separate work. This feature does not certify those paths.
+
+## Fixed Windows launcher
+
+For the packaged loopback-only launcher, fixed browser origin, shutdown, errors,
+and JSON recovery instructions, see [Windows Local Operation](Windows%20Local%20Operation.md).
+The launcher requires Node.js 22+ but no npm dependencies at runtime.

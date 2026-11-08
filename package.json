@@ -9,7 +9,10 @@
     "build": "tsc --noEmit && vite build && node scripts/single-file.mjs",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "local": "node scripts/LocalLauncher.mjs",
+    "test:local": "node --test scripts/LocalLauncher.test.mjs",
+    "test:windows": "node scripts/VerifyWindowsLauncher.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",
