@@ -19,7 +19,7 @@ set "ExecFlowData=%LOCALAPPDATA%\ExecFlowData"
 set "ExecFlowBackup=%~1"
 if not defined ExecFlowBackup set /p "ExecFlowBackup=Existing folder on an independent external drive: "
 if not defined ExecFlowBackup exit /b 1
-"%ExecFlowNode%" "%~dp0scripts\BackupService.mjs" create "%~dp0" "%ExecFlowData%" "%ExecFlowBackup%"
+"%ExecFlowNode%" "%~dp0scripts\BackupService.mjs" create "%~dp0." "%ExecFlowData%" "%ExecFlowBackup%"
 set "ExecFlowResult=%errorlevel%"
 if not "%ExecFlowResult%"=="0" echo Backup failed. Original service data was preserved.
 pause
