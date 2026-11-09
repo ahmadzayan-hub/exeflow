@@ -1,4 +1,4 @@
-# ExecFlow 0.3.0 local release
+# ExecFlow 0.3.1 local release
 
 Author: Ahmed Zaian. 9 November 2026.
 
@@ -18,4 +18,7 @@ The publicly downloadable package starts with an empty demonstration portfolio. 
 
 Windows CI tests native command startup, missing Node/build errors, portable Node, occupied port, Enter shutdown and reopening. Persistent Chrome scenarios cover Arabic/English capture, source review, reload, full browser/server restarts, JSON recovery, cancellation, corrupt-text export and invalid backups. The release package is extracted and its native Windows acceptance script runs against the extracted files. Build, frontend and backend suites also run before a main-branch release is published.
 
-Version 0.3.0 is a prerelease with local service-backed voice, Microsoft Graph adapters, reviewed source intake, calendar creation and an automation worker. See [Local Integrations](Local%20Integrations.md) for setup and exact validation boundaries. Whisper/model binaries and an approved Microsoft application ID/tenant are prerequisites, not bundled account access. Automated protocol tests use synthetic providers; live tenant consent, actual mailbox/calendar operations, real email delivery and user-device Arabic speech quality are not certified. Multi-user enterprise storage and immutable approval history remain separate work. Reporting retains its separately configured backend.
+Version 0.3.1 is a prerelease with local service-backed voice, Microsoft Graph adapters, reviewed source intake, calendar creation and an automation worker. See [Local Integrations](Local%20Integrations.md) for setup and exact validation boundaries. Whisper/model binaries and an approved Microsoft application ID/tenant are prerequisites, not bundled account access. Automated protocol tests use synthetic providers; live tenant consent, actual mailbox/calendar operations, real email delivery and user-device Arabic speech quality are not certified. Multi-user enterprise storage and immutable approval history remain separate work. Reporting retains its separately configured backend.
+
+
+Version 0.3.1 bounds local-model CPU/context/output usage, uses bilingual structured extraction, preserves task wording verbatim, accepts an explicit no-commitment result, and rejects paraphrased task text. It adds BackupExecFlow.cmd for checksummed full service snapshots on a different volume, with corruption detection and register-only recovery. A different drive letter does not by itself prove independent physical hardware; select an external device. No background Windows service or persisted Microsoft token is installed. See Local Integrations.md for actual-model acceptance limits.

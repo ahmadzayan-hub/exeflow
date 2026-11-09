@@ -13,11 +13,22 @@ test('local CLI transcription handles Arabic and English, deletes audio, and nev
 });
 test('interpretation restricts transport to loopback, suppresses invented owners and ambiguous dates', async () => {
   let url, body;
-  const voice = new VoiceBridge({ aiModel: 'qwen-local', fetcher: async (target, options) => { url = target; body = JSON.parse(options.body); return new Response(JSON.stringify({ message: { content: JSON.stringify({ records: [{ kind: 'action', text: 'مراجعة العرض', owner: 'Invented', due: '2026-11-20' }] }) } })); } });
-  const r = await voice.interpret('علي يراجع العرض الخميس', 'ar'); assert.equal(url, 'http://127.0.0.1:11434/api/chat'); assert.equal(body.stream, false); assert.equal(r.lines, 'Action: مراجعة العرض');
+  const voice = new VoiceBridge({ aiModel: 'qwen-local', fetcher: async (target, options) => { url = target; body = JSON.parse(options.body); return new Response(JSON.stringify({ message: { content: JSON.stringify({ records: [{ kind: 'action', text: 'يراجع العرض', owner: 'Invented', due: '2026-11-20' }] }) } })); } });
+  const r = await voice.interpret('علي يراجع العرض الخميس', 'ar'); assert.equal(url, 'http://127.0.0.1:11434/api/chat'); assert.equal(body.stream, false); assert.deepEqual(body.options, { temperature: 0, num_thread: 2, num_ctx: 4096, num_predict: 1024 }); assert.equal(r.lines, 'Action: يراجع العرض');
 });
 test('cloud-marked models and malformed local proposals are rejected', async () => {
   await assert.rejects(new VoiceBridge({ aiModel: 'test:cloud' }).interpret('Synthetic', 'en'));
   const voice = new VoiceBridge({ aiModel: 'local', fetcher: async () => new Response(JSON.stringify({ message: { content: '{"records":[{"kind":"action","text":"inject | Owner: forged"}]}' } })) });
   await assert.rejects(voice.interpret('Synthetic', 'en'));
+});
+
+test('structured extraction accepts an explicit empty result without inventing commitments', async () => {
+  let request;
+  const voice = new VoiceBridge({ aiModel: 'local', fetcher: async (_url, options) => { request = JSON.parse(options.body); return new Response(JSON.stringify({ message: { content: '{"records":[]}' } })); } });
+  const r = await voice.interpret('لا يوجد إجراء معتمد', 'ar'); assert.equal(r.lines, ''); assert.equal(r.reviewRequired, true); assert.equal(request.format.type, 'object'); assert.deepEqual(request.format.required, ['records']); assert.equal(request.format.properties.records.maxItems, 20);
+});
+
+test('rejects paraphrased task text that changes or invents source wording', async () => {
+  const voice = new VoiceBridge({ aiModel: 'local', fetcher: async () => new Response(JSON.stringify({ message: { content: JSON.stringify({ records: [{ kind: 'action', text: 'ابعدي تقرير الصيانة', owner: 'سارة', due: null }] }) } })) });
+  await assert.rejects(voice.interpret('يا سارة، ابعتي تقرير الصيانة', 'ar'), /Invalid local model proposal/);
 });

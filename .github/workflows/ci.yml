@@ -18,6 +18,7 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run test:services
+      - run: npm run test:backup
       - name: Install disposable pinned browser tooling
         env:
           BROWSER_TOOL_ROOT: ${{ runner.temp }}/exeflow-browser
@@ -74,6 +75,7 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run build
       - run: npm run test:services
+      - run: npm run test:backup
       - run: npm run test:local
       - run: npm run test:windows
       - name: Install disposable browser test tools
