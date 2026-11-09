@@ -16,7 +16,7 @@ try {
     const source = { id: 'synthetic', kind: 'email', title: 'Synthetic source', text, reference: 'https://example.test/source' };
     const sent = [], calendar = [];
     const graph = { status: () => ({ connected: true, delivery: true, calendarWrite: true, account: { id: 'synthetic-account', name: 'Synthetic', email: 'operator@example.test' } }), disconnect() {}, sources: async () => [source], source: async () => source, send: async (event, recipients) => { sent.push({ event, recipients }); return { accepted: true }; }, calendar: async record => { calendar.push(record); return { id: 'synthetic-event' }; } };
-    const voice = new VoiceBridge({ executable: process.execPath, model: process.execPath, runner: async (exe, args) => { await writeFile(args[args.indexOf('-of') + 1] + '.json', JSON.stringify({ transcription: [{ text: en ? 'Synthetic voice transcript' : 'نص صوتي تجريبي' }] })); }, aiModel: 'synthetic-local', fetcher: async () => new Response(JSON.stringify({ message: { content: JSON.stringify({ records: [{ kind: 'action', text: title, owner: 'Ali', due: '2026-10-01' }] }) } })) });
+    const voice = new VoiceBridge({ executable: process.execPath, model: process.execPath, runner: async (exe, args) => { await writeFile(args[args.indexOf('-of') + 1] + '.json', JSON.stringify({ transcription: [{ text: en ? 'Synthetic voice transcript' : 'نص صوتي تجريبي' }] })); }, aiModel: 'synthetic-local', fetcher: async (_target, options) => new Response(JSON.stringify({ message: { content: JSON.stringify({ records: JSON.parse(options.body).messages.at(-1).content === 'No adopted commitment' ? [] : [{ kind: 'action', text: title, owner: 'Ali', due: '2026-10-01' }] }) } })) });
     let server, context;
     try {
       server = await startLocalApp({ serviceOptions: { directory, graph, voice, intervalMs: 0 } });
@@ -48,6 +48,10 @@ try {
       const policy = page.getByRole('button', { name: en ? 'Save automation policy' : 'حفظ سياسة الأتمتة', exact: true }); assert.equal(await policy.isDisabled(), true);
       await page.getByRole('checkbox', { name: en ? 'I approve these recipients and thresholds for automatic email submission' : 'أعتمد هؤلاء المستلمين وحدود التأخر لإرسال البريد الآلي', exact: true }).check(); await policy.click();
       await page.getByText(en ? 'Accepted for processing' : 'قُبل للمعالجة', { exact: true }).waitFor(); assert.equal(sent.length, 1); assert.deepEqual(sent[0].recipients, ['recipient@example.test']);
+      await page.getByLabel(en ? 'Original source excerpt / transcript' : 'مقتطف المصدر الأصلي / النص الصوتي', { exact: true }).fill('No adopted commitment');
+      await page.getByRole('button', { name: en ? 'Prepare proposals for human review' : 'إعداد مقترحات للمراجعة البشرية', exact: true }).click();
+      await page.getByText(en ? 'No adopted commitment was found. Review the source; no records were saved.' : 'لم يُعثر على التزام معتمد. راجع المصدر؛ لم تُحفظ أي بنود.', { exact: true }).waitFor();
+      assert.equal(JSON.parse(await readFile(resolve(directory, 'State.json'), 'utf8')).register.records.length, 1);
       assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)); assert.deepEqual(errors, []); assert.deepEqual(external, []);
       console.log(`PASS integration ${lang}: actual local HTTP/session, explicit connection, browser audio decoding/WAV upload, simulated local speech engine, synthetic Graph source, local-model protocol, original evidence, review gate, atomic disk sync, reviewed calendar, approved escalation, no external browser requests; adapters simulated`);
     } finally { if (context) await context.close(); if (server) await new Promise(r => { server.close(r); server.closeAllConnections(); }); await rm(directory, { recursive: true, force: true }); }

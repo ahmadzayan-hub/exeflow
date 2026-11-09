@@ -1,7 +1,7 @@
 {
   "name": "exeflow-rmd-dashboard",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "RMD Projects Executive Dashboard (ExecFlow)",
   "type": "module",
   "scripts": {
@@ -15,7 +15,8 @@
     "test:windows": "node scripts/VerifyWindowsLauncher.mjs",
     "build:release": "tsc --noEmit && vite build --mode release && node scripts/single-file.mjs && node scripts/VerifyReleaseData.mjs && node scripts/BuildRuntime.mjs",
     "package:windows": "node scripts/CreateWindowsPackage.mjs",
-    "test:services": "node --test scripts/services/*.test.mjs"
+    "test:services": "node --test scripts/services/*.test.mjs",
+    "test:backup": "node --test scripts/BackupService.test.mjs"
   },
   "dependencies": {
     "react": "^19.2.8",

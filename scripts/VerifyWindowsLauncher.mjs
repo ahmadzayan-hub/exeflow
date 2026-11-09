@@ -11,9 +11,11 @@ if (process.platform !== 'win32') throw new Error('This acceptance script requir
 const folder = await mkdtemp(join(tmpdir(), 'ExecFlow Package & Windows '));
 const results = { platform: process.platform, node: process.version, checks: [] };
 const children = new Set();
-async function start({ portable = false, missingBuild = false, pathOnly = false } = {}) {
+async function start({ portable = false, missingBuild = false, pathOnly = false, backup = false } = {}) {
   const sub = join(folder, `Case${results.checks.length}`);
   await mkdir(join(sub, 'scripts'), { recursive: true });
+  await copyFile(new URL('../BackupExecFlow.cmd', import.meta.url), join(sub, 'BackupExecFlow.cmd'));
+  await copyFile(new URL('./BackupService.mjs', import.meta.url), join(sub, 'scripts', 'BackupService.mjs'));
   await copyFile(new URL('../StartExecFlow.cmd', import.meta.url), join(sub, 'StartExecFlow.cmd'));
   await copyFile(new URL('./LocalLauncher.mjs', import.meta.url), join(sub, 'scripts', 'LocalLauncher.mjs'));
   await cp(new URL('./services/', import.meta.url), join(sub, 'scripts', 'services'), { recursive: true });
@@ -23,8 +25,9 @@ async function start({ portable = false, missingBuild = false, pathOnly = false 
   if (portable) { await mkdir(join(sub, 'Runtime')); await copyFile(process.execPath, join(sub, 'Runtime', 'node.exe')); }
   const env = { ...process.env, EXECFLOW_OPEN_BROWSER: '0', EXECFLOW_DATA_DIR: join(sub, 'PrivateData') };
   if (portable || pathOnly) env.Path = env.PATH = join(process.env.SystemRoot, 'System32');
+  if (backup) { await mkdir(join(sub,'PrivateData')); await mkdir(join(sub,'Backups')); }
   // shell is cmd.exe explicitly; the full command path is quoted, including & and spaces.
-  const child = spawn(process.env.ComSpec ?? 'cmd.exe', ['/d', '/s', '/c', `""${join(sub, 'StartExecFlow.cmd')}""`], { env, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, windowsVerbatimArguments: true });
+  const child = spawn(process.env.ComSpec ?? 'cmd.exe', ['/d', '/s', '/c', (backup ? `""${join(sub, 'BackupExecFlow.cmd')}" "${join(sub, 'Backups')}""` : `""${join(sub, 'StartExecFlow.cmd')}""`)], { env, stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true, windowsVerbatimArguments: true });
   children.add(child); let output = '';
   child.stdout.on('data', c => { output += c; }); child.stderr.on('data', c => { output += c; });
   const exited = once(child, 'exit');
@@ -63,6 +66,8 @@ try {
   } finally { await new Promise(resolve => { occupied.close(resolve); occupied.closeAllConnections(); }); }
   run = await start(); await run.waitText('ExecFlow is running locally'); await close(run, 0);
   pass('same fixed port reopens after clean shutdown');
+  run = await start({ backup: true, portable: true }); await run.waitText('Choose a different volume'); await close(run, 1);
+  pass('native backup command rejects a same-volume destination and preserves service data');
   await mkdir('artifacts/local', { recursive: true });
   await writeFile('artifacts/local/WindowsAcceptance.json', JSON.stringify(results, null, 2));
 } finally {

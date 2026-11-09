@@ -55,3 +55,22 @@ References:
 - https://learn.microsoft.com/en-us/graph/api/calendar-post-events?view=graph-rest-1.0
 
 The Microsoft app registration and operator sign-in are operational prerequisites. The ChatGPT Outlook connection is separate and is not silently transferred into this desktop application.
+
+
+## Verbatim extraction and bounded local inference
+
+Version 0.3.1 uses a JSON schema, Arabic/English extraction instructions and examples. It limits inference to two CPU threads, 4,096 context tokens and 1,024 generated tokens. These are bounded defaults, not universal performance guarantees. Task text must be copied verbatim from the source; paraphrased wording is rejected because a changed verb can reverse meaning. A valid empty result clears old proposals and reports that no adopted commitment was found. Human review remains mandatory. A schema and source-substring check do not prove semantic correctness or defeat every prompt injection.
+
+## Independent backup and recovery
+
+Connect an approved external drive and create a backup folder there. Run BackupExecFlow.cmd and enter that existing folder, or pass it as the command argument. The tool refuses a nested or same-volume destination and never overwrites the live register. It copies the atomic State.json snapshot, exports Register.json, writes SHA256 checksums, and verifies both integrity and runtime acceptance. Policies/events are included in State.json; Microsoft tokens are not. The full snapshot is plaintext, so keep the external drive secure. Volume separation is a technical check, not proof of independent hardware, encryption or protection from device loss.
+
+Verify again before recovery:
+
+```text
+node scripts/BackupService.mjs verify "APP FOLDER" "BACKUP FOLDER"
+```
+
+Use Register.json through the existing preview/confirm restore workflow for register-only recovery. Restoring complete State.json is an operator task with the service stopped: preserve the current file, disconnect mail, review policies/pending events and deduplication history before re-enabling email. An old snapshot can reintroduce events from before the backup; do not replace state blindly or automatically resend uncertain mail. No automatic restore or retention deletion is installed.
+
+The automation worker still requires the local process to run. Closing the browser does not stop it; stopping the launcher, sleeping or turning off Windows does. Reopening requires Microsoft sign-in again. This update does not silently install an unattended service, save OAuth tokens, or claim a backup was created on the user's external drive.
