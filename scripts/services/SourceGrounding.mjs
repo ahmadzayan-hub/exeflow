@@ -28,6 +28,11 @@ export function groundProposal(source, proposal) {
     const negated = /\b(?:do not|don't|never)\s+(?!forget\b)/i.test(prefixAndTask) || /(?:^|[\s،,:])(?:لا|لم|لن)\s+(?!تنس)/u.test(prefixAndTask);
     const cancelled = /\b(?:cancelled|canceled|withdrawn)\b/i.test(context.text) || /(?:التكليف\s+(?:ملغي|اتلغى)|ليس\s+تكليف)/u.test(context.text);
     if (negated || cancelled) throw new Error('The proposed task is negated or cancelled in its source. Review the original.');
+    const following = spans[spans.indexOf(context) + 1]?.text ?? '';
+    const unadopted = /(?:لسه\s+ما\s+اتفقناش|للحين\s+ما\s+اعتمدنا|مجرد\s+(?:مقترح|اقتراح)|ليس\s+تكليف|ما\s+اتخذنا\s+قرار|ما\s+عندنا\s+تكليف\s+معتمد|لا\s+يوجد\s+تكليف\s+معتمد)/u;
+    const englishPending = /\b(?:only a suggestion|has not been agreed|not yet agreed|no agreement|no approved commitment)\b/i;
+    const pendingTail = /^(?:لسه\s+ما\s+اتفقناش|للحين\s+ما\s+اعتمدنا\s+(?:شي|شيء)|ما\s+اتخذنا\s+قرار|(?:ده|هذا)\s+(?:مش|ليس)\s+تكليف|(?:This|It)\s+(?:is\s+only\s+a\s+suggestion(?:,\s*with\s+no\s+agreement)?|has\s+not\s+been\s+agreed)|There\s+is\s+no\s+approved\s+commitment)$/iu.test(following.trim());
+    if (unadopted.test(context.text) || englishPending.test(context.text) || pendingTail) throw new Error('The proposed task is explicitly unadopted in its source. Review the original.');
   }
   const next = span ? spans[spans.indexOf(span) + 1]?.text.trim() ?? '' : '';
   const labelledOwner = /^(?:The\s+owner\s+is|المسؤول(?:ة)?)\s+(.+)$/iu.exec(next)?.[1].trim();

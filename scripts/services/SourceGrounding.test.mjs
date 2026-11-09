@@ -27,3 +27,10 @@ test('Arabic digits convert only for an explicit valid local date',()=>{
 });
 
 test('duplicated task text cannot bypass clear negation',()=>{assert.throws(()=>groundProposal('Do not submit the report. Do not submit the report.',task('submit the report')),/negated or cancelled/);});
+
+test('explicitly unadopted suggestions do not become tasks, while adopted instructions remain',()=>{
+ assert.throws(()=>groundProposal('ممكن نخلي سارة تراجع العرض؟ لسه ما اتفقناش.',task('تراجع العرض','سارة')),/explicitly unadopted/);
+ assert.throws(()=>groundProposal('Could George review the tender? This is only a suggestion, with no agreement.',task('review the tender','George')),/explicitly unadopted/);
+ assert.equal(groundProposal('Alice, review plan. Bob reviewing stock has not been agreed.',task('review plan','Alice')).owner,'Alice');
+ assert.equal(groundProposal('سارة، راجعي العرض. هذا تكليف معتمد.',task('راجعي العرض','سارة')).owner,'سارة');
+});
