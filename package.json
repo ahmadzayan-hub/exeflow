@@ -1,7 +1,7 @@
 {
   "name": "exeflow-rmd-dashboard",
   "private": true,
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "RMD Projects Executive Dashboard (ExecFlow)",
   "type": "module",
   "scripts": {
