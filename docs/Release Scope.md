@@ -1,4 +1,4 @@
-# ExecFlow 0.3.1 local release
+# ExecFlow 0.3.2 local release
 
 Author: Ahmed Zaian. 9 November 2026.
 
@@ -22,3 +22,6 @@ Version 0.3.1 is a prerelease with local service-backed voice, Microsoft Graph a
 
 
 Version 0.3.1 bounds local-model CPU/context/output usage, uses bilingual structured extraction, preserves task wording verbatim, accepts an explicit no-commitment result, and rejects paraphrased task text. It adds BackupExecFlow.cmd for checksummed full service snapshots on a different volume, with corruption detection and register-only recovery. A different drive letter does not by itself prove independent physical hardware; select an external device. No background Windows service or persisted Microsoft token is installed. See Local Integrations.md for actual-model acceptance limits.
+
+
+Version 0.3.2 adds visible transcript truncation, earlier Arabic rejection of known English-only model filenames, conservative sentence-local field grounding, supported explicit negation checks, and partial-batch rejection with visible warnings. It retains required ownerless tasks in extraction instructions and adds read-only voice preflight and a 48-case real-model text runner. Existing registration, capture, review, backup, reporting and automation functionality is retained. No new unattended service, account session or approved sending policy is installed. Lexical guards do not prove semantic linkage; actual model, acoustic and user-device acceptance remain separate.

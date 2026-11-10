@@ -78,6 +78,39 @@ jobs:
       - run: npm run test:backup
       - run: npm run test:local
       - run: npm run test:windows
+      - name: Verify offline voice settings preview and rollback on disposable Windows
+        shell: pwsh
+        run: |
+          $before = @{}
+          $names = @('OLLAMA_HOST', 'OLLAMA_NO_CLOUD', 'OLLAMA_NUM_PARALLEL', 'OLLAMA_MAX_LOADED_MODELS')
+          foreach ($name in $names) { $before[$name] = [Environment]::GetEnvironmentVariable($name, 'User') }
+          $preview = & ./scripts/ConfigureOfflineVoice.ps1 | ConvertFrom-Json
+          if ($preview.userEnvironmentWritten -ne $false -or $preview.runningServerVerified -ne $false) { throw 'Preview must not claim applied settings' }
+          foreach ($name in $names) {
+            if ([Environment]::GetEnvironmentVariable($name, 'User') -ne $before[$name]) { throw "Preview changed $name" }
+          }
+          try {
+            & ./scripts/ConfigureOfflineVoice.ps1 -Apply | Out-Null
+            foreach ($name in $names) {
+              if ([Environment]::GetEnvironmentVariable($name, 'User') -ne $preview.proposedUserEnvironment.$name) { throw "Apply did not set $name" }
+            }
+            & ./scripts/ConfigureOfflineVoice.ps1 -Restore | Out-Null
+            foreach ($name in $names) {
+              if ([Environment]::GetEnvironmentVariable($name, 'User') -ne $before[$name]) { throw "Restore did not recover $name" }
+            }
+            & powershell.exe -NoProfile -File ./scripts/ConfigureOfflineVoice.ps1 -Apply
+            if ($LASTEXITCODE -ne 0) { throw 'Windows PowerShell apply failed' }
+            & powershell.exe -NoProfile -File ./scripts/ConfigureOfflineVoice.ps1 -Restore
+            if ($LASTEXITCODE -ne 0) { throw 'Windows PowerShell restore failed' }
+            foreach ($name in $names) {
+              if ([Environment]::GetEnvironmentVariable($name, 'User') -ne $before[$name]) { throw "Windows PowerShell did not recover $name" }
+            }
+          } finally {
+            foreach ($name in $names) {
+              if ($null -eq $before[$name]) { [Environment]::SetEnvironmentVariable($name, [System.Management.Automation.Language.NullString]::Value, 'User') }
+              else { [Environment]::SetEnvironmentVariable($name, $before[$name], 'User') }
+            }
+          }
       - name: Install disposable browser test tools
         shell: pwsh
         run: npm install --prefix "$env:RUNNER_TEMP/ExecFlowBrowser" --no-save --package-lock=false --ignore-scripts --no-audit --no-fund playwright@1.62.1

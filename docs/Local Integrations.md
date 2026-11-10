@@ -74,3 +74,30 @@ node scripts/BackupService.mjs verify "APP FOLDER" "BACKUP FOLDER"
 Use Register.json through the existing preview/confirm restore workflow for register-only recovery. Restoring complete State.json is an operator task with the service stopped: preserve the current file, disconnect mail, review policies/pending events and deduplication history before re-enabling email. An old snapshot can reintroduce events from before the backup; do not replace state blindly or automatically resend uncertain mail. No automatic restore or retention deletion is installed.
 
 The automation worker still requires the local process to run. Closing the browser does not stop it; stopping the launcher, sleeping or turning off Windows does. Reopening requires Microsoft sign-in again. This update does not silently install an unattended service, save OAuth tokens, or claim a backup was created on the user's external drive.
+
+## Source-local review safeguards (0.3.2)
+
+Transcripts report truncation at 2,000 characters and the view displays the existing source warning. A known English-only `.en` model filename is rejected before Arabic execution, including common quantized filenames. Renamed files still need engine verification.
+
+The local interpretation bridge checks exact task wording, whole-name boundaries, valid explicit dates, and sentence-local field evidence. It removes a proposed owner/date found only in another sentence, with a visible incomplete-extraction warning. A following sentence containing only an explicit owner label is allowed. Dates in a following sentence remain unknown, even if a human could establish their relationship. Repeated task excerpts cannot borrow fields; cross-sentence task excerpts are rejected. Explicit supported negation/cancellation forms are checked for every occurrence.
+
+Invalid proposals are rejected independently: valid siblings remain available for review, accompanied by a warning and rejected count. If every proposed record is rejected, the request errors rather than claiming that the source has no commitment. A genuine empty model result remains supported. Instructions explicitly retain required tasks without an assigned owner and provide an English decision example to reduce example-language contamination. No deterministic fallback invents a missing task.
+
+Sentence-local and lexical checks are conservative, incomplete aids. They do not prove that two activities in one sentence have the correct owner/date, resolve indirect negation or quotations, or guarantee prompt-injection resistance. Human comparison with the original remains mandatory. These changes do not enable automatic saving or sending.
+
+### Read-only Windows voice checks
+
+From the extracted package folder, with approved Node.js 22+ and local model files:
+
+```text
+node scripts/CheckVoiceRuntime.mjs "C:\Models\whisper-cli.exe" "C:\Models\ggml-small.bin" "qwen3:4b-instruct"
+node scripts/RunVoiceAcceptance.mjs "." "Voice Acceptance Results.json"
+```
+
+The first script checks local paths and the exact installed Ollama tag and reports suggested settings without applying them. It does not prove binary authenticity or offline enforcement. The second calls VoiceBridge directly on 30 development cases plus 18 predeclared additional text cases and stores actual responses. It exits with a nonzero code on any failed case. Neither script starts LocalLauncher, Graph sign-in, an automation worker or a mail/calendar write. No model download is performed. The inference runner requires a separately started approved local Ollama server.
+
+Suggested initial 16 GB settings remain: multilingual whisper small, `qwen3:4b-instruct` Q4_K_M, two threads, 4,096 context tokens, 1,024 generated tokens, one concurrent model, cloud features disabled. Start with 30–60 second recordings; the five-minute input limit does not guarantee completion within the 180-second CLI timeout. Do not treat model file size as total RAM usage. Actual Windows RAM, microphone and dialect acceptance remain open.
+
+The approved offline trial profile now requests `keep_alive: 0` on ExecFlow interpretation calls so Ollama can unload that model after each response. This can increase the next request's cold-start latency; neither the flag nor a unit test proves actual memory release. An explicitly selected lighter profile may set `EXECFLOW_LOCAL_THINK=false`; the bridge first requires the installed server/model to advertise boolean false support through `/api/show`. Otherwise it stops before extraction rather than guessing compatibility. The 48-case runner records the request profile and retains its original strict scoring, including failures for guard rejections.
+
+See **Offline Voice Trial.md** for the Windows settings preview/apply/restore commands, the unchanged existing text tests and the 18-recording acoustic plan. The settings script never runs from StartExecFlow or the preflight automatically. It does not stop Ollama, download models, sign into Microsoft or change firewall rules. Windows laptop measurements remain NOT_RUN until evidence is collected on that device.
