@@ -11,6 +11,7 @@ const packageName = 'ExecFlowWindowsPackage.zip';
 const version = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8')).version;
 const paths = ['scripts/CheckVoiceRuntime.mjs', 'scripts/RunVoiceAcceptance.mjs', 'scripts/VoiceCases.json', 'BackupExecFlow.cmd', 'scripts/BackupService.mjs', 'StartExecFlow.cmd', 'CheckExecFlow.cmd', 'scripts/LocalLauncher.mjs', 'scripts/LocalLauncher.test.mjs', 'scripts/VerifyWindowsLauncher.mjs', 'scripts/VerifyLocalPersistence.mjs', 'dist/rmd-dashboard.html', 'dist/CommitmentRuntime.mjs', 'scripts/services/GraphConnection.mjs', 'scripts/services/VoiceBridge.mjs', 'scripts/services/SourceGrounding.mjs', 'scripts/services/LocalAutomation.mjs', 'scripts/services/LocalServices.mjs', 'docs/Local Integrations.md', 'docs/Release Scope.md'];
 const entries = [];
+paths.push('ConfigureOfflineVoice.cmd', 'scripts/ConfigureOfflineVoice.ps1', 'docs/Offline Voice Trial.md');
 for (const path of paths) entries.push({ name: `ExecFlowWindowsPackage/${path}`, data: await readFile(resolve(root, path)) });
 for (const [path, name] of [['LICENSE', 'ExecFlow.txt'], ['node_modules/react/LICENSE', 'React.txt'], ['node_modules/react-dom/LICENSE', 'ReactDom.txt'], ['node_modules/scheduler/LICENSE', 'Scheduler.txt']]) entries.push({ name: `ExecFlowWindowsPackage/Licences/${name}`, data: await readFile(resolve(root, path)) });
 entries.push({ name: 'ExecFlowWindowsPackage/Runtime/Read Me.txt', data: Buffer.from('Use approved Node.js LTS 22+ in PATH, or place an approved Windows node.exe here. No binary is bundled.\r\n') });

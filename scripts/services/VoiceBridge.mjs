@@ -37,7 +37,10 @@ const extractionMessages = [
 
 ];
 export class VoiceBridge {
-  constructor({ executable = process.env.EXECFLOW_WHISPER_EXE, model = process.env.EXECFLOW_WHISPER_MODEL, runner = runFile, aiModel = process.env.EXECFLOW_LOCAL_MODEL, fetcher = fetch } = {}) { Object.assign(this, { executable, model, runner, aiModel, fetcher }); this.busy = false; }
+  constructor({ executable = process.env.EXECFLOW_WHISPER_EXE, model = process.env.EXECFLOW_WHISPER_MODEL, runner = runFile, aiModel = process.env.EXECFLOW_LOCAL_MODEL, think = process.env.EXECFLOW_LOCAL_THINK, fetcher = fetch } = {}) {
+    if (think !== undefined && think !== false && think !== 'false') throw new Error('EXECFLOW_LOCAL_THINK must be false or unset. Verify model support before disabling thinking.');
+    Object.assign(this, { executable, model, runner, aiModel, fetcher, think: think === false || think === 'false' ? false : undefined }); this.busy = false;
+  }
   async configure(config) {
     if (this.busy) throw new Error('Wait for the current voice job before reconfiguring.');
     if (config.confirmedOffline !== true || typeof config.executable !== 'string' || typeof config.model !== 'string' || !isAbsolute(config.executable) || !isAbsolute(config.model) || [config.executable, config.model].some(p => p.startsWith('\\\\') || p.startsWith('//') || p.includes('://')) || !/^whisper-cli(?:\.exe)?$/i.test(basename(config.executable)) || typeof config.aiModel !== 'string' || config.aiModel.length > 100 || /cloud/i.test(config.aiModel) || (config.aiModel && !/^[a-z0-9_.:/-]+$/i.test(config.aiModel))) throw new Error('Select approved local whisper-cli/model files and confirm the local model operates offline. Network paths and cloud models are not allowed.');
@@ -65,7 +68,12 @@ export class VoiceBridge {
     if (!this.aiModel || /cloud/i.test(this.aiModel) || !/^[a-z0-9_.:/-]{1,100}$/i.test(this.aiModel)) throw new Error('Configure an approved offline Ollama model with EXECFLOW_LOCAL_MODEL.');
     if (this.busy) throw new Error('A voice/interpretation job is already running.'); this.busy = true;
     try {
-      const r = await this.fetcher('http://127.0.0.1:11434/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: this.aiModel, stream: false, format: proposalSchema, options: { temperature: 0, num_thread: 2, num_ctx: 4096, num_predict: 1024 }, messages: [...extractionMessages, { role: 'user', content: text }] }), redirect: 'error', signal: AbortSignal.timeout(120000) });
+      if (this.think === false) {
+        const shown = await this.fetcher('http://127.0.0.1:11434/api/show', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: this.aiModel }), redirect: 'error', signal: AbortSignal.timeout(5000) });
+        const details = shown.ok ? await shown.json() : null;
+        if (details?.thinking?.values?.includes(false) !== true) throw new Error('The installed model/server does not advertise think:false support. Leave EXECFLOW_LOCAL_THINK unset or verify a compatible local runtime.');
+      }
+      const r = await this.fetcher('http://127.0.0.1:11434/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ model: this.aiModel, stream: false, keep_alive: 0, ...(this.think === false ? { think: false } : {}), format: proposalSchema, options: { temperature: 0, num_thread: 2, num_ctx: 4096, num_predict: 1024 }, messages: [...extractionMessages, { role: 'user', content: text }] }), redirect: 'error', signal: AbortSignal.timeout(120000) });
       if (!r.ok) throw new Error('Local interpretation failed.'); const d = await r.json(); const value = JSON.parse(d.message?.content ?? '{}');
       if (!Array.isArray(value.records) || value.records.length > 20) throw new Error('No valid proposals returned.');
       const warnings = new Set(), lines = []; let rejected = 0, lastError;

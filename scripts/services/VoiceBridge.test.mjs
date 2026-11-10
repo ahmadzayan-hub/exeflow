@@ -14,7 +14,7 @@ test('local CLI transcription handles Arabic and English, deletes audio, and nev
 test('interpretation restricts transport to loopback, suppresses invented owners and ambiguous dates', async () => {
   let url, body;
   const voice = new VoiceBridge({ aiModel: 'qwen-local', fetcher: async (target, options) => { url = target; body = JSON.parse(options.body); return new Response(JSON.stringify({ message: { content: JSON.stringify({ records: [{ kind: 'action', text: 'يراجع العرض', owner: 'Invented', due: '2026-11-20' }] }) } })); } });
-  const r = await voice.interpret('علي يراجع العرض الخميس', 'ar'); assert.equal(url, 'http://127.0.0.1:11434/api/chat'); assert.equal(body.stream, false); assert.deepEqual(body.options, { temperature: 0, num_thread: 2, num_ctx: 4096, num_predict: 1024 }); assert.equal(r.lines, 'Action: يراجع العرض');
+  const r = await voice.interpret('علي يراجع العرض الخميس', 'ar'); assert.equal(url, 'http://127.0.0.1:11434/api/chat'); assert.equal(body.stream, false); assert.equal(body.keep_alive, 0); assert.equal(Object.hasOwn(body, 'think'), false); assert.deepEqual(body.options, { temperature: 0, num_thread: 2, num_ctx: 4096, num_predict: 1024 }); assert.equal(r.lines, 'Action: يراجع العرض');
 });
 test('cloud-marked models and malformed local proposals are rejected', async () => {
   await assert.rejects(new VoiceBridge({ aiModel: 'test:cloud' }).interpret('Synthetic', 'en'));
@@ -31,4 +31,24 @@ test('structured extraction accepts an explicit empty result without inventing c
 test('rejects paraphrased task text that changes or invents source wording', async () => {
   const voice = new VoiceBridge({ aiModel: 'local', fetcher: async () => new Response(JSON.stringify({ message: { content: JSON.stringify({ records: [{ kind: 'action', text: 'ابعدي تقرير الصيانة', owner: 'سارة', due: null }] }) } })) });
   await assert.rejects(voice.interpret('يا سارة، ابعتي تقرير الصيانة', 'ar'), /Invalid local model proposal/);
+});
+
+test('the explicit lighter-model profile disables thinking while preserving reviewed extraction', async () => {
+  let request;
+  const voice = new VoiceBridge({ aiModel: 'qwen3:1.7b', think: false, fetcher: async (url, options) => {
+    if (url.endsWith('/show')) return new Response(JSON.stringify({ thinking: { values: [true, false] } }));
+    request = JSON.parse(options.body);
+    return new Response(JSON.stringify({ message: { content: '{"records":[{"kind":"action","text":"review the plan","owner":"Alice","due":null}]}' } }));
+  } });
+  const result = await voice.interpret('Alice, review the plan.', 'en');
+  assert.equal(request.think, false); assert.equal(request.keep_alive, 0);
+  assert.equal(result.lines, 'Action: review the plan | Owner: Alice'); assert.equal(result.reviewRequired, true);
+  assert.throws(() => new VoiceBridge({ think: 'true' }), /false or unset/);
+});
+
+test('unverified thinking controls stop before requesting lighter-model extraction', async () => {
+  const calls = [];
+  const voice = new VoiceBridge({ aiModel: 'qwen3:1.7b', think: false, fetcher: async url => { calls.push(url); return new Response(JSON.stringify({ capabilities: ['thinking'] })); } });
+  await assert.rejects(voice.interpret('Alice, review the plan.', 'en'), /does not advertise think:false/);
+  assert.deepEqual(calls, ['http://127.0.0.1:11434/api/show']); assert.equal(voice.busy, false);
 });

@@ -20,7 +20,7 @@ for(const c of cases){let raw,result,error;const start=performance.now();
  const owners=meaning&&matches.every(m=>m.actual.owner===m.expected.owner);
  const dates=meaning&&matches.every(m=>m.actual.due===m.expected.due);
  results.push({id:c.id,dialect:c.dialect,category:c.category,source:c.source,expected:c.expected,actual,meaning,owners,dates,passed:meaning&&owners&&dates,warnings:result?.warnings??[],rejected:result?.rejected??null,error:error??null,seconds:(performance.now()-start)/1000,raw});
- await writeFile(resolve(process.argv[3]??'Meaning Results.json'),JSON.stringify({model,metadata,sourceHashes,platform:process.platform,node:process.version,method:'Real local model on synthetic text; not acoustic validation. Predeclared task substring plus exact kind/owner/date. Longer verbatim task excerpts allowed. All errors fail.',results},null,2));
+ await writeFile(resolve(process.argv[3]??'Meaning Results.json'),JSON.stringify({model,metadata,sourceHashes,platform:process.platform,node:process.version,requestProfile:{keep_alive:0,...(process.env.EXECFLOW_LOCAL_THINK==='false'?{think:false}:{}),num_thread:2,num_ctx:4096,num_predict:1024},method:'Real local model on synthetic text; not acoustic validation. Predeclared task substring plus exact kind/owner/date. Longer verbatim task excerpts allowed. All errors fail; review guard rejections separately without changing the strict score.',results},null,2));
  console.log(c.id,meaning&&owners&&dates?'PASS':'FAIL',JSON.stringify(actual),error??'');
 }
 console.log('PASS',results.filter(x=>x.passed).length,'/',results.length);if(results.some(x=>!x.passed))process.exitCode=1;
