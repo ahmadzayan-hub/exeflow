@@ -37,7 +37,15 @@ if ($Apply) {
         if ($null -eq $property -or ($null -ne $property.Value -and $property.Value -isnot [string])) { throw "Backup is incomplete or invalid: $name" }
         if ([Environment]::GetEnvironmentVariable($name, 'User') -ne $settings[$name]) { throw "Settings changed since this profile was applied: $name. Review before restoring." }
     }
-    foreach ($name in $settings.Keys) { [Environment]::SetEnvironmentVariable($name, $previous.PSObject.Properties[$name].Value, 'User') }
+    foreach ($name in $settings.Keys) {
+        $value = $previous.PSObject.Properties[$name].Value
+        # PowerShell 7.5+ coerces $null to an empty string; NullString requests deletion.
+        if ($null -eq $value) { [Environment]::SetEnvironmentVariable($name, [System.Management.Automation.Language.NullString]::Value, 'User') }
+        else { [Environment]::SetEnvironmentVariable($name, $value, 'User') }
+    }
+    foreach ($name in $settings.Keys) {
+        if ([Environment]::GetEnvironmentVariable($name, 'User') -cne $previous.PSObject.Properties[$name].Value) { throw "Restore could not recover $name. Backup retained for review." }
+    }
     Remove-Item -LiteralPath $backup
 }
 [ordered]@{

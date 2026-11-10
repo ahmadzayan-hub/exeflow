@@ -98,8 +98,18 @@ jobs:
             foreach ($name in $names) {
               if ([Environment]::GetEnvironmentVariable($name, 'User') -ne $before[$name]) { throw "Restore did not recover $name" }
             }
+            & powershell.exe -NoProfile -File ./scripts/ConfigureOfflineVoice.ps1 -Apply
+            if ($LASTEXITCODE -ne 0) { throw 'Windows PowerShell apply failed' }
+            & powershell.exe -NoProfile -File ./scripts/ConfigureOfflineVoice.ps1 -Restore
+            if ($LASTEXITCODE -ne 0) { throw 'Windows PowerShell restore failed' }
+            foreach ($name in $names) {
+              if ([Environment]::GetEnvironmentVariable($name, 'User') -ne $before[$name]) { throw "Windows PowerShell did not recover $name" }
+            }
           } finally {
-            foreach ($name in $names) { [Environment]::SetEnvironmentVariable($name, $before[$name], 'User') }
+            foreach ($name in $names) {
+              if ($null -eq $before[$name]) { [Environment]::SetEnvironmentVariable($name, [System.Management.Automation.Language.NullString]::Value, 'User') }
+              else { [Environment]::SetEnvironmentVariable($name, $before[$name], 'User') }
+            }
           }
       - name: Install disposable browser test tools
         shell: pwsh
