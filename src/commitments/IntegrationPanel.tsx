@@ -60,7 +60,10 @@ export function IntegrationPanel({ lang, register, blocked, onPrepared, onBridge
     if (alive.current) setSource({ kind: 'voice', title: label('Voice capture', 'التقاط صوتي'), text: result.text, reference: '' });
   }
   async function record() {
-    if (recording) { if (recorder.current?.state === 'recording') recorder.current.stop(); else stream.current?.getTracks().forEach(t => t.stop()); setRecording(false); return; }
+    if (recording) {
+      if (recorder.current?.state === 'recording') recorder.current.stop();
+      return; // onstop hands the recording to transcription before the draft can be submitted.
+    }
     const media = await navigator.mediaDevices.getUserMedia({ audio: true }); stream.current = media; if (!alive.current) { media.getTracks().forEach(t => t.stop()); return; }
     try {
       const rec = new MediaRecorder(media), chunks: BlobPart[] = []; let failed = false; recorder.current = rec;
@@ -108,7 +111,7 @@ export function IntegrationPanel({ lang, register, blocked, onPrepared, onBridge
       </select></label>
       <label>{label('Audio file', 'ملف صوتي')}<input type="file" accept="audio/*" disabled={busy || recording || !state?.voice.transcription} onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void task(() => transcribe(f, dictationLanguage)); }} /></label>
       <button className="btn" type="button" disabled={busy || !state?.voice.transcription} onClick={() => void task(record)}>{recording ? label('Stop recording', 'إيقاف التسجيل') : label('Record locally', 'تسجيل محلي')}</button>
-      <button className="btn" type="button" disabled={busy || !source.text.trim() || !state?.voice.interpretation} onClick={() => void task(async () => { const result = await api<{ lines: string }>('interpret', 'POST', { text: source.text, language: lang }); onPrepared(source, result.lines); if (!result.lines.trim()) setError(label('No adopted commitment was found. Review the source; no records were saved.', 'لم يُعثر على التزام معتمد. راجع المصدر؛ لم تُحفظ أي بنود.')); })}>{label('Prepare proposals for human review', 'إعداد مقترحات للمراجعة البشرية')}</button>
+      <button className="btn" type="button" disabled={busy || recording || !source.text.trim() || !state?.voice.interpretation} onClick={() => void task(async () => { const result = await api<{ lines: string }>('interpret', 'POST', { text: source.text, language: lang }); onPrepared(source, result.lines); if (!result.lines.trim()) setError(label('No adopted commitment was found. Review the source; no records were saved.', 'لم يُعثر على التزام معتمد. راجع المصدر؛ لم تُحفظ أي بنود.')); })}>{label('Prepare proposals for human review', 'إعداد مقترحات للمراجعة البشرية')}</button>
       <label>{label('Calendar commitment', 'بند التقويم')}<select aria-label={label('Calendar commitment', 'بند التقويم')} value={recordId} onChange={e => { setRecordId(e.target.value); setCalendarConfirmed(false); }}><option value="">{label('Choose a saved dated record', 'اختر بنداً محفوظاً له تاريخ')}</option>{register.records.filter(r => r.due).map(r => <option key={r.id} value={r.id}>{r.text} · {r.due}</option>)}</select></label>
       <label className="review-consent"><input type="checkbox" checked={calendarConfirmed} onChange={e => setCalendarConfirmed(e.target.checked)} />{label('Create an all-day due-date event in my Microsoft calendar for this record', 'إنشاء حدث يوم كامل بتاريخ استحقاق هذا البند في تقويم Microsoft')}</label>
       <button className="btn" type="button" disabled={busy || !recordId || !calendarConfirmed} onClick={() => void task(async () => { await api('calendar', 'POST', { recordId, confirmed: calendarConfirmed, expectedAccountId: state?.graph.account?.id }); setCalendarConfirmed(false); })}>{label('Create reviewed calendar event', 'إنشاء حدث التقويم المراجع')}</button>
