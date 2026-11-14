@@ -13,6 +13,7 @@ export function IntegrationPanel({ lang, register, blocked, onPrepared, onBridge
   });
   const [connected, setConnected] = useState(false), [state, setState] = useState<State | null>(null), [error, setError] = useState('');
   const [source, setSource] = useState<SourceEvidence>({ kind: 'voice', title: '', text: '', reference: '' });
+  const [dictationLanguage, setDictationLanguage] = useState<Lang>(lang);
   const [sources, setSources] = useState<(SourceEvidence & { id: string })[]>([]);
   const [clientId, setClientId] = useState(''), [tenant, setTenant] = useState('organizations'), [delivery, setDelivery] = useState(false);
   const [login, setLogin] = useState<{ userCode: string; verificationUri: string } | null>(null);
@@ -24,8 +25,8 @@ export function IntegrationPanel({ lang, register, blocked, onPrepared, onBridge
   const [busy, setBusy] = useState(false), [recording, setRecording] = useState(false);
   const working = useRef(false);
   const token = useRef(''), revision = useRef(0), recorder = useRef<MediaRecorder | null>(null), stream = useRef<MediaStream | null>(null), alive = useRef(true);
-  async function api<T>(path: string, method = 'GET', body?: unknown, binary = false): Promise<T> {
-    const response = await fetch(`/api/local/${path}`, { method, headers: { 'X-ExecFlow-Session': token.current, ...(binary ? { 'Content-Type': 'audio/wav', 'X-ExecFlow-Language': lang } : { 'Content-Type': 'application/json' }) }, body: body === undefined ? undefined : binary ? body as ArrayBuffer : JSON.stringify(body), redirect: 'error' });
+  async function api<T>(path: string, method = 'GET', body?: unknown, audioLanguage?: Lang): Promise<T> {
+    const response = await fetch(`/api/local/${path}`, { method, headers: { 'X-ExecFlow-Session': token.current, ...(audioLanguage ? { 'Content-Type': 'audio/wav', 'X-ExecFlow-Language': audioLanguage } : { 'Content-Type': 'application/json' }) }, body: body === undefined ? undefined : audioLanguage ? body as ArrayBuffer : JSON.stringify(body), redirect: 'error' });
     const value = await response.json(); if (!response.ok) throw new Error(value.error ?? 'Local request failed.'); return value;
   }
   async function task(work: () => Promise<void>) { if (working.current) return; working.current = true; setBusy(true); setError(''); try { await work(); } catch (e) { setError(e instanceof Error ? e.message : 'Operation failed.'); } finally { working.current = false; setBusy(false); } }
@@ -52,15 +53,23 @@ export function IntegrationPanel({ lang, register, blocked, onPrepared, onBridge
     return () => clearInterval(timer);
   }, [connected]);
   useEffect(() => { alive.current = true; return () => { alive.current = false; if (recorder.current?.state === 'recording') recorder.current.stop(); stream.current?.getTracks().forEach(t => t.stop()); }; }, []);
-  async function transcribe(blob: Blob) { const bytes = await audioToWave(blob); const result = await api<{ text: string }>('transcribe', 'POST', bytes, true); setSource({ kind: 'voice', title: label('Voice capture', 'التقاط صوتي'), text: result.text, reference: '' }); }
+  async function transcribe(blob: Blob, language: Lang) {
+    const bytes = await audioToWave(blob);
+    if (!alive.current) return;
+    const result = await api<{ text: string }>('transcribe', 'POST', bytes, language);
+    if (alive.current) setSource({ kind: 'voice', title: label('Voice capture', 'التقاط صوتي'), text: result.text, reference: '' });
+  }
   async function record() {
-    if (recording) { if (recorder.current?.state === 'recording') recorder.current.stop(); else stream.current?.getTracks().forEach(t => t.stop()); setRecording(false); return; }
+    if (recording) {
+      if (recorder.current?.state === 'recording') recorder.current.stop();
+      return; // onstop hands the recording to transcription before the draft can be submitted.
+    }
     const media = await navigator.mediaDevices.getUserMedia({ audio: true }); stream.current = media; if (!alive.current) { media.getTracks().forEach(t => t.stop()); return; }
     try {
       const rec = new MediaRecorder(media), chunks: BlobPart[] = []; let failed = false; recorder.current = rec;
       rec.onerror = () => { failed = true; media.getTracks().forEach(t => t.stop()); setRecording(false); setError(label('Microphone recording failed; no transcript was submitted.', 'تعذر التسجيل من الميكروفون؛ لم يُرسل تسجيل للتفريغ.')); };
       rec.ondataavailable = event => { if (event.data.size) chunks.push(event.data); };
-      rec.onstop = () => { media.getTracks().forEach(t => t.stop()); setRecording(false); if (alive.current && !failed) void task(() => transcribe(new Blob(chunks, { type: rec.mimeType }))); };
+      rec.onstop = () => { media.getTracks().forEach(t => t.stop()); setRecording(false); if (alive.current && !failed) void task(() => transcribe(new Blob(chunks, { type: rec.mimeType }), dictationLanguage)); };
       rec.start(); setRecording(true); setTimeout(() => { if (rec.state === 'recording') rec.stop(); }, 295000);
     } catch (e) { media.getTracks().forEach(t => t.stop()); throw e; }
   }
@@ -95,10 +104,14 @@ export function IntegrationPanel({ lang, register, blocked, onPrepared, onBridge
       <button className="btn" type="button" disabled={busy || !offlineConfirmed} onClick={() => void task(async () => { await api('voice/config', 'PUT', { executable: voiceExe, model: voiceModel, aiModel, confirmedOffline: offlineConfirmed }); await refresh(); })}>{label('Save local voice setup', 'حفظ إعداد الصوت المحلي')}</button>
       <label>{label('Original source excerpt / transcript', 'مقتطف المصدر الأصلي / النص الصوتي')}<textarea aria-label={label('Original source excerpt / transcript', 'مقتطف المصدر الأصلي / النص الصوتي')} disabled={busy || recording} maxLength={2000} rows={4} value={source.text} onChange={e => setSource({ ...source, text: e.target.value })} /></label>
       {source.truncated && <p role="note">{label('Only the first 2,000 source characters are shown. Verify the full original or paste the relevant excerpt before interpretation.', 'يُعرض أول ٢٠٠٠ حرف فقط. راجع الأصل الكامل أو الصق المقتطف المناسب قبل تفسيره.')}</p>}
-      <p>{label('Check the transcript against your recording before interpreting. Ambiguous dates remain unspecified.', 'راجع النص مقارنة بالتسجيل قبل تفسيره. تبقى التواريخ الملتبسة غير محددة.')}</p>
-      <label>{label('Audio file', 'ملف صوتي')}<input type="file" accept="audio/*" disabled={busy || !state?.voice.transcription} onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void task(() => transcribe(f)); }} /></label>
+      <p>{label('Check names, dates and reference IDs against the recording before interpreting.', 'تحقق من الأسماء والتواريخ والمعرّفات المرجعية بمقارنتها بالتسجيل قبل تفسير النص.')}</p>
+      <label>{label('Dictation language', 'لغة الإملاء')}<select value={dictationLanguage} disabled={busy || recording || !state?.voice.transcription} onChange={e => setDictationLanguage(e.target.value === 'ar' ? 'ar' : 'en')}>
+        <option value="ar" lang="ar">العربية</option>
+        <option value="en" lang="en">English</option>
+      </select></label>
+      <label>{label('Audio file', 'ملف صوتي')}<input type="file" accept="audio/*" disabled={busy || recording || !state?.voice.transcription} onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) void task(() => transcribe(f, dictationLanguage)); }} /></label>
       <button className="btn" type="button" disabled={busy || !state?.voice.transcription} onClick={() => void task(record)}>{recording ? label('Stop recording', 'إيقاف التسجيل') : label('Record locally', 'تسجيل محلي')}</button>
-      <button className="btn" type="button" disabled={busy || !source.text.trim() || !state?.voice.interpretation} onClick={() => void task(async () => { const result = await api<{ lines: string }>('interpret', 'POST', { text: source.text, language: lang }); onPrepared(source, result.lines); if (!result.lines.trim()) setError(label('No adopted commitment was found. Review the source; no records were saved.', 'لم يُعثر على التزام معتمد. راجع المصدر؛ لم تُحفظ أي بنود.')); })}>{label('Prepare proposals for human review', 'إعداد مقترحات للمراجعة البشرية')}</button>
+      <button className="btn" type="button" disabled={busy || recording || !source.text.trim() || !state?.voice.interpretation} onClick={() => void task(async () => { const result = await api<{ lines: string }>('interpret', 'POST', { text: source.text, language: lang }); onPrepared(source, result.lines); if (!result.lines.trim()) setError(label('No adopted commitment was found. Review the source; no records were saved.', 'لم يُعثر على التزام معتمد. راجع المصدر؛ لم تُحفظ أي بنود.')); })}>{label('Prepare proposals for human review', 'إعداد مقترحات للمراجعة البشرية')}</button>
       <label>{label('Calendar commitment', 'بند التقويم')}<select aria-label={label('Calendar commitment', 'بند التقويم')} value={recordId} onChange={e => { setRecordId(e.target.value); setCalendarConfirmed(false); }}><option value="">{label('Choose a saved dated record', 'اختر بنداً محفوظاً له تاريخ')}</option>{register.records.filter(r => r.due).map(r => <option key={r.id} value={r.id}>{r.text} · {r.due}</option>)}</select></label>
       <label className="review-consent"><input type="checkbox" checked={calendarConfirmed} onChange={e => setCalendarConfirmed(e.target.checked)} />{label('Create an all-day due-date event in my Microsoft calendar for this record', 'إنشاء حدث يوم كامل بتاريخ استحقاق هذا البند في تقويم Microsoft')}</label>
       <button className="btn" type="button" disabled={busy || !recordId || !calendarConfirmed} onClick={() => void task(async () => { await api('calendar', 'POST', { recordId, confirmed: calendarConfirmed, expectedAccountId: state?.graph.account?.id }); setCalendarConfirmed(false); })}>{label('Create reviewed calendar event', 'إنشاء حدث التقويم المراجع')}</button>

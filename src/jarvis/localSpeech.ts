@@ -2,7 +2,12 @@ import type { Lang } from "../i18n";
 
 /** Never fall back to a remote/default voice, including when Arabic is unavailable. */
 export function localVoice(voices: SpeechSynthesisVoice[], lang: Lang): SpeechSynthesisVoice | null {
-  return voices.find((voice) => voice.localService === true && voice.lang.toLowerCase().split(/[-_]/)[0] === lang) ?? null;
+  const preferred = lang === "ar" ? "ar-ae" : "en-us";
+  const local = voices.filter((voice) => voice.localService === true);
+  const normalized = (voice: SpeechSynthesisVoice) => voice.lang.toLowerCase().replaceAll("_", "-");
+  return local.find((voice) => normalized(voice) === preferred)
+    ?? local.find((voice) => normalized(voice).split("-")[0] === lang)
+    ?? null;
 }
 
 /** Own only this panel's utterance; cancel it before its source context changes. */

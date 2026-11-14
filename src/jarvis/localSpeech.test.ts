@@ -32,6 +32,13 @@ describe("device-local readback", () => {
     expect(synth.cancel).toHaveBeenCalledOnce();
   });
 
+  it("prefers an installed UAE Arabic voice and can use another local Arabic voice", () => {
+    const egyptian = voice("ar-EG", true);
+    const emirati = voice("ar_AE", true);
+    expect(localVoice([egyptian, emirati], "ar")).toBe(emirati);
+    expect(localVoice([voice("ar-AE", false), egyptian], "ar")).toBe(egyptian);
+  });
+
   it("does not cancel or queue behind another active reader", () => {
     const { reader, synth } = setup([voice("en-US", true)], true);
     expect(reader.read("Summary", "en", vi.fn(), vi.fn())).toBe(false);
