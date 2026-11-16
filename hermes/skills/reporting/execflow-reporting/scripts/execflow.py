@@ -25,12 +25,22 @@ import uuid
 BASE = os.environ.get("EXECFLOW_URL", "http://127.0.0.1:8000").rstrip("/")
 
 
+class NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        # Do not forward the service credential to a redirect destination.
+        return None
+
+
 def call(method: str, path: str, body: dict | None = None, raw: bytes | None = None, content_type: str | None = None):
     data = raw if raw is not None else (json.dumps(body).encode() if body is not None else None)
     req = urllib.request.Request(f"{BASE}{path}", data=data, method=method)
+    token = os.environ.get("EXECFLOW_API_TOKEN", "")
+    if not token:
+        sys.exit("Set EXECFLOW_API_TOKEN before calling ExecFlow")
+    req.add_header("Authorization", f"Bearer {token}")
     req.add_header("Content-Type", content_type or "application/json")
     try:
-        with urllib.request.urlopen(req, timeout=600) as r:
+        with urllib.request.build_opener(NoRedirect).open(req, timeout=600) as r:
             ct = r.headers.get("Content-Type", "")
             payload = r.read()
             return json.loads(payload) if "json" in ct else payload.decode()
@@ -122,3 +132,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

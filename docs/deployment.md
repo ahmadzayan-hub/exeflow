@@ -31,10 +31,10 @@ Do not deploy a private build to a public URL. If you must host it, turn on **Ve
 
 ```bash
 npm ci
-npm run build          # writes release/rmd-dashboard.html
+npm run build          # writes dist/rmd-dashboard.html
 ```
 
-`release/rmd-dashboard.html` is one self-contained file. It opens from a phone, a shared drive or an email attachment, with no server.
+`dist/rmd-dashboard.html` is one self-contained file. It opens from a phone, a shared drive or an email attachment, with no server.
 
 ## Private build with your own register
 

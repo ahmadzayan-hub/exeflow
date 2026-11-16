@@ -1,6 +1,7 @@
 import registerJson from "@register";
 import type { Portfolio } from "../types";
 import { buildShowcase } from "./showcase";
+import releaseJson from "./ReleasePortfolio.json";
 
 export type DatasetKey = "showcase" | "register";
 
@@ -16,6 +17,8 @@ export function hasRegister(): boolean {
 }
 
 export function baseFor(key: DatasetKey, now: Date = new Date()): Portfolio {
+  // `vite build --mode release` (Windows local package) ships an empty demonstration portfolio.
+  if (import.meta.env.MODE === "release") return releaseJson as unknown as Portfolio;
   if (key === "register" && hasRegister()) return registerJson as Portfolio;
   return buildShowcase(now);
 }

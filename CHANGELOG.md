@@ -4,6 +4,22 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-16
+
+### Changed
+- **Merged the interactive v0.2 work with `main`** (local Windows package, commitments register, Jarvis commands, API token authentication, offline execution policy). Nothing from `main` was removed.
+- The Reporting screen now has two modes: *On this device* (default, no backend) and *Analytics service* (token-protected Python service). The service access token form moved into the service tab.
+- Single-file build is written to `dist/rmd-dashboard.html`, as the launcher and Windows package expect.
+- `vite build --mode release` keeps shipping an empty demonstration portfolio; the default public build ships the fictional showcase.
+- Imported registers keep the original storage key so data saved by earlier versions still loads; a view name followed by `&pair=` in the URL hash is read correctly.
+- Toast region no longer uses `role="status"`, so it does not clash with in-page status messages.
+
+### Fixed
+- `.gitignore` excluded `src/data/` through an unanchored `data/` rule; the files are tracked again.
+
+### Policy note
+- The Python service stays offline by default and rejects cloud providers. The optional `/api/narrate` function is the only cloud path, it is off unless `GROQ_API_KEY` is set on your own deployment, and it sends aggregates only.
+
 ## [0.2.0] - 2026-10-23
 
 ### Added

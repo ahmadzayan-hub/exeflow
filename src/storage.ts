@@ -1,6 +1,7 @@
 import type { Portfolio, Project } from "./types";
 
-const keyFor = (dataset: string) => `exeflow.rmd.portfolio.${dataset}`;
+// Imported registers keep the original key so data saved by earlier versions and local packages still loads.
+const keyFor = (dataset: string) => (dataset === "imported" ? "exeflow.rmd.portfolio" : `exeflow.rmd.portfolio.${dataset}`);
 const LANG_KEY = "exeflow.rmd.lang";
 
 const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);

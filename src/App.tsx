@@ -5,6 +5,7 @@ import { CapturePanel } from "./components/CapturePanel";
 import { Filters, type FilterState, emptyFilters, applyFilters } from "./components/Filters";
 import { Header } from "./components/Header";
 import { Insights } from "./components/Insights";
+import { JarvisPanel } from "./components/JarvisPanel";
 import { ProjectCard } from "./components/ProjectCard";
 import { ProjectDetail } from "./components/ProjectDetail";
 import { SummaryTiles } from "./components/SummaryTiles";
@@ -12,6 +13,7 @@ import { baseFor, defaultDataset, hasRegister, type DatasetKey } from "./data";
 import type { Lang } from "./i18n";
 import { bi, t } from "./i18n";
 import { DAY_MS, parseDate, reportingWindow, summarise } from "./metrics";
+import { CommitmentsView } from "./commitments/CommitmentsView";
 import { ReportingView } from "./reporting/ReportingView";
 import { isPortfolio, loadLang, loadPortfolio, saveLang, savePortfolio } from "./storage";
 import type { Asset, Category, Kind, Portfolio, Project, Rag, Stage } from "./types";
@@ -145,6 +147,7 @@ export function App() {
     { id: "portfolio", en: "Portfolio", ar: "المحفظة" },
     { id: "timeline", en: "Timeline", ar: "الجدول الزمني" },
     { id: "brief", en: "Weekly brief", ar: "الملخص الأسبوعي" },
+    { id: "commitments", en: "Commitments", ar: "الالتزامات" },
     { id: "reporting", en: "Reporting", ar: "التقارير" },
   ];
 
@@ -199,7 +202,7 @@ export function App() {
       </nav>
 
       <div className="page" id="main">
-        {view !== "reporting" && (
+        {view !== "reporting" && view !== "commitments" && (
           <div className={`banner banner-${bannerTone}`} role="note">
             <strong>{portfolio.dataset === "working" ? x("Working copy", "نسخة عمل") : t(portfolio.dataset, lang)}:</strong> {bi(portfolio.disclaimer, lang)}
             {portfolio.dataset === "working" && <> {x("Your edits are saved in this browser only. Use Data, then Export JSON, to keep a copy.", "تُحفظ تعديلاتك في هذا المتصفح فقط. استخدم البيانات ثم تصدير JSON للاحتفاظ بنسخة.")}</>}
@@ -228,6 +231,7 @@ export function App() {
                 stages={distinct(portfolio.projects, (p) => p.stage)}
                 kinds={distinct(portfolio.projects, (p) => p.kind)}
               />
+              <JarvisPanel portfolio={portfolio} projects={visible} today={today} lang={lang} onSelect={setSelectedId} />
               {visible.length === 0 ? (
                 <p className="empty">{t("noMatch", lang)}</p>
               ) : (
@@ -250,6 +254,12 @@ export function App() {
         {view === "brief" && (
           <main>
             <BriefView portfolio={portfolio} today={today} period={period} lang={lang} onToast={setToast} />
+          </main>
+        )}
+
+        {view === "commitments" && (
+          <main>
+            <CommitmentsView lang={lang} />
           </main>
         )}
 

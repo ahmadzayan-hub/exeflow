@@ -7,7 +7,7 @@ export function Toast({ message, onDone }: { message: string | null; onDone: () 
     return () => clearTimeout(id);
   }, [message, onDone]);
   return (
-    <div className="toast-region" role="status" aria-live="polite">
+    <div className="toast-region" aria-live="polite">
       {message && <div className="toast">{message}</div>}
     </div>
   );

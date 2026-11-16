@@ -9,7 +9,7 @@
   <img alt="Node 22" src="https://img.shields.io/badge/Node-22-5fa04e?logo=nodedotjs&logoColor=white">
   <img alt="Python 3.11+" src="https://img.shields.io/badge/Python-3.11%2B-3776ab?logo=python&logoColor=white">
   <img alt="English and Arabic" src="https://img.shields.io/badge/EN%20%7C%20AR-RTL%20ready-c8102e">
-  <img alt="Tests" src="https://img.shields.io/badge/tests-166%20web%20%2B%2019%20service-1f8a4c">
+  <img alt="Tests" src="https://img.shields.io/badge/tests-224%20web%20%2B%20288%20service-1f8a4c">
 </p>
 
 <p align="center">
@@ -71,8 +71,8 @@ npm run dev          # http://localhost:5173
 ```
 
 ```bash
-npm test             # 166 tests: metrics, actions, capture parser, engine, serverless function
-npm run build        # typecheck, production build, and release/rmd-dashboard.html (offline file)
+npm test             # 224 tests: metrics, actions, capture parser, engine, commitments, Jarvis, serverless function, auth
+npm run build        # typecheck, production build, and dist/rmd-dashboard.html (offline file)
 ```
 
 Optional Python service for PDF and Word files and the multi-agent pipeline:
@@ -81,6 +81,21 @@ Optional Python service for PDF and Word files and the multi-agent pipeline:
 pip install -e "./server[dev]"
 uvicorn execflow.api:app --port 8000 --app-dir server
 ```
+
+The service requires a bearer token: set `EXECFLOW_API_TOKEN` before starting it and enter the same value on the Reporting screen under *Analytics service*. It runs offline by default (`EXECFLOW_MODE=mock`); cloud providers are rejected in code. See [API security](docs/api-security.md) and the [execution policy](docs/execution-policy.md).
+
+## Commitments register and Windows package
+
+`/#commitments` is an offline register of decisions and commitments: labelled English or Arabic minutes go through an explicit source review into a browser-local register with closure tracking and a downloadable weekly brief. Owners and dates are copied only from explicit fields; ambiguous lines are reported for correction. No model, microphone or server is used on this screen. See [commitment capture](docs/commitment-capture.md).
+
+A Windows local package (fixed-origin launcher, reviewed recovery, optional local voice and Microsoft Graph integrations) is built with:
+
+```bash
+npm run build:release   # public build with an empty demonstration portfolio
+npm run package:windows
+```
+
+Read [release scope](docs/Release%20Scope.md) and [local integrations](docs/Local%20Integrations.md). Live account consent and speech acceptance on a real device remain operational gates; synthetic tests do not prove them.
 
 ## Deploy
 
@@ -92,7 +107,7 @@ Static hosting is enough. On Vercel the settings in [`vercel.json`](vercel.json)
 |---|---|
 | Real register | Never in the repository. `data/private/` is git-ignored; public builds stub it out at build time. |
 | Files you analyse | Read in the browser. Nothing is uploaded in the default mode. |
-| AI narrative | Optional. Only finding text and KPI values leave the device, through your own serverless function. |
+| AI narrative | Off by default. If you set `GROQ_API_KEY` on your own Vercel deployment, only finding text and KPI values leave the device, through that function. The Python service never calls a cloud model. |
 | Accounts, cookies, analytics | None. |
 
 Details and the exact data flows are in [Data governance](docs/data-governance.md).
@@ -132,7 +147,7 @@ The code is organised so the logic is testable without a browser: [`src/metrics.
 
 ## Status and roadmap
 
-Version 0.2.0. The weekly loop works end to end: capture, register, brief. Next are escalation rules, shared registers across a team, and `executive.action_overdue` events for the other products in the family. See the [roadmap](docs/roadmap.md).
+Version 0.4.0. The weekly loop works end to end: capture, register, brief. Next are escalation rules, shared registers across a team, and `executive.action_overdue` events for the other products in the family. See the [roadmap](docs/roadmap.md).
 
 ## Contributing and security
 
@@ -140,4 +155,4 @@ Read [CONTRIBUTING](CONTRIBUTING.md) first. Security reports go through [SECURIT
 
 ## Licence
 
-Copyright (c) 2026 Ahmed Zaian. All rights reserved. See [LICENSE](LICENSE). The fictional showcase data and example register may be used to try the product locally.
+Copyright (c) 2026 Ahmad Zayan. All rights reserved. See [LICENSE](LICENSE). The fictional showcase data and example register may be used to try the product locally.

@@ -124,7 +124,7 @@ const table = {
   run: ["Run analysis", "تشغيل التحليل"],
   running: ["Agents working", "الوكلاء يعملون"],
   backendOffline: ["The analytics backend is not reachable. Start it with: uvicorn execflow.api:app --port 8000", "الخادم التحليلي غير متاح. شغّله بالأمر: uvicorn execflow.api:app --port 8000"],
-  mockWarning: ["Mock provider: no model key configured. Set GROQ_API_KEY (or another provider) for real analysis.", "مزود تجريبي: لا يوجد مفتاح نموذج. اضبط GROQ_API_KEY (أو مزوداً آخر) للتحليل الفعلي."],
+  mockWarning: ["Offline mock: synthetic demonstration only. Cloud execution is disabled.", "وضع تجريبي دون اتصال: للعرض ببيانات اصطناعية فقط. التشغيل السحابي معطّل."],
   models: ["Models", "النماذج"],
   findings: ["Confirmed findings", "النتائج المؤكدة"],
   rejectedFindings: ["Not verified (excluded from the report)", "غير متحقق منها (مستبعدة من التقرير)"],
@@ -134,7 +134,7 @@ const table = {
   memory: ["Memory", "الذاكرة"],
   memoryHint: ["Definitions, baselines and preferences the agents recall on every run.", "التعريفات وخطوط الأساس والتفضيلات التي يستدعيها الوكلاء في كل تشغيل."],
   addMemory: ["Add", "إضافة"],
-  memoryPlaceholder: ["e.g. Availability target is 99% under the maintenance agreement", "مثال: هدف التوافرية 99% بموجب اتفاقية الصيانة"],
+  memoryPlaceholder: ["e.g. Synthetic service target is 95% per an approved local source", "مثال: الهدف التجريبي للخدمة 95% وفق مصدر محلي معتمد"],
   memoryUsed: ["Memory used in this run", "الذاكرة المستخدمة في هذا التشغيل"],
   rows: ["rows", "صف"],
   tables: ["tables", "جداول"],
@@ -162,3 +162,4 @@ export function bi(v: { en: string; ar?: string } | undefined, lang: Lang): stri
   if (!v) return "";
   return lang === "ar" && v.ar ? v.ar : v.en;
 }
+

@@ -14,11 +14,12 @@ export function useTheme(): [ThemeChoice, () => void] {
   return [theme, cycle];
 }
 
-export type View = "portfolio" | "timeline" | "brief" | "reporting";
-const VIEWS: View[] = ["portfolio", "timeline", "brief", "reporting"];
+export type View = "portfolio" | "timeline" | "brief" | "commitments" | "reporting";
+const VIEWS: View[] = ["portfolio", "timeline", "brief", "commitments", "reporting"];
 
 export function viewFromHash(hash: string): View {
-  const h = hash.replace(/^#\/?/, "");
+  // "#commitments&pair=..." carries a one-time pairing code after the view name.
+  const h = hash.replace(/^#\/?/, "").split(/[&?]/)[0];
   return (VIEWS as string[]).includes(h) ? (h as View) : "portfolio";
 }
 

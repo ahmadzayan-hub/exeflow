@@ -1,9 +1,8 @@
 """OpenAI-compatible chat client with tool calling, plus role-based routing.
 
-Providers are plain base URLs, so the same code talks to Groq (hosted
-open-weight models), Nous Portal (Hermes 4), OpenRouter, a local Ollama, or
-a running Hermes Agent API server. A deterministic mock stands in when no key
-is configured, so the pipeline is testable without network access.
+Default execution is a deterministic mock with no network access. Local mode
+allows only loopback Ollama. Legacy cloud/Hermes provider names are retained for
+recognising and rejecting old configuration, not for enabling cloud execution.
 """
 
 from __future__ import annotations
@@ -16,6 +15,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 import httpx
+
+from .execution_policy import ExecutionPolicyError, execution_mode, validate_route
 
 ROLES = ("orchestrator", "analyst", "reviewer", "reporter")
 
@@ -62,9 +63,11 @@ class ModelRef:
 
     @classmethod
     def parse(cls, spec: str, default_provider: str) -> "ModelRef":
+        if any(ord(c) < 32 for c in spec):
+            raise ExecutionPolicyError("Model routing must not contain control characters")
         if ":" in spec:
             p, m = spec.split(":", 1)
-            return cls(p.strip(), m.strip())
+            return cls(p.strip().lower(), m.strip())
         return cls(default_provider, spec.strip())
 
     def __str__(self) -> str:
@@ -75,26 +78,42 @@ class ChatClient:
     def __init__(self, provider: str, model: str, base_url: str | None = None, api_key: str | None = None, timeout: float = 120.0):
         if provider not in PROVIDERS:
             raise ValueError(f"unknown provider '{provider}'; known: {sorted(PROVIDERS)}")
-        default_url, key_env, _ = PROVIDERS[provider]
+        default_url, _, _ = PROVIDERS[provider]
         self.provider = provider
         self.model = model
         self.base_url = (base_url or os.environ.get(f"{provider.upper()}_BASE_URL") or default_url or "").rstrip("/")
-        self.api_key = api_key or (os.environ.get(key_env) if key_env else None) or "none"
+        validate_route(self.provider, self.model, execution_mode(), self.base_url)
+        if provider == "mock":
+            raise ExecutionPolicyError("Use MockClient for offline execution")
+        # Local Ollama does not need a credential. Never forward cloud/service keys.
+        if api_key:
+            raise ExecutionPolicyError("Local model requests must not carry service credentials")
         self.timeout = timeout
 
     def chat(self, messages: list[dict], tools: list[dict] | None = None, json_mode: bool = False, temperature: float = 0.2, max_tokens: int = 4000, role: str = "") -> ChatResult:
+        # Recheck at the actual send boundary, even if the instance was modified
+        # or the mode was tightened after construction. No unsafe fallback.
+        validate_route(self.provider, self.model, execution_mode(), self.base_url)
+        if self.provider != "ollama":
+            raise ExecutionPolicyError("Only local Ollama may use the network client")
         body: dict[str, Any] = {"model": self.model, "messages": messages, "temperature": temperature, "max_tokens": max_tokens}
         if tools:
             body["tools"] = [{"type": "function", "function": t} for t in tools]
             body["tool_choice"] = "auto"
         if json_mode:
             body["response_format"] = {"type": "json_object"}
-        headers = {"Authorization": f"Bearer {self.api_key}", "Content-Type": "application/json"}
+        headers = {"Content-Type": "application/json"}
         last_err: Exception | None = None
         for attempt in range(3):
+            # A retry is another send boundary; respect tightening during backoff.
+            validate_route(self.provider, self.model, execution_mode(), self.base_url)
+            if self.provider != "ollama":
+                raise ExecutionPolicyError("Only local Ollama may use the network client")
             try:
-                with httpx.Client(timeout=self.timeout) as c:
+                with httpx.Client(timeout=self.timeout, trust_env=False, follow_redirects=False) as c:
                     r = c.post(f"{self.base_url}/chat/completions", headers=headers, json=body)
+                if 300 <= r.status_code < 400:
+                    raise ExecutionPolicyError("Model redirects are disabled")
                 if r.status_code in (429, 500, 502, 503, 504) and attempt < 2:
                     time.sleep(1.5 * (attempt + 1))
                     continue
@@ -218,6 +237,7 @@ class Routing:
     roles: dict[str, ModelRef]
     allow_rows: bool
     mock: bool
+    mode: str = "mock"
 
     def describe(self) -> dict:
         return {
@@ -225,26 +245,31 @@ class Routing:
             "roles": {r: str(m) for r, m in self.roles.items()},
             "allow_rows": self.allow_rows,
             "mock": self.mock,
-            "providers_with_keys": [p for p, (_, env, _) in PROVIDERS.items() if env and os.environ.get(env)],
+            "mode": self.mode,
+            "cloud_allowed": False,
+            "providers_with_keys": [],
         }
 
 
 def load_routing(env: dict | None = None) -> Routing:
     e = env if env is not None else os.environ
-    provider = (e.get("EXECFLOW_PROVIDER") or "groq").strip().lower()
-    key_env = PROVIDERS.get(provider, (None, None, ""))[1]
-    mock = provider == "mock" or (key_env is not None and not e.get(key_env))
-    if mock:
-        provider = "mock"
+    mode = execution_mode(e)
+    provider = e.get("EXECFLOW_PROVIDER", "mock" if mode == "mock" else "ollama").strip().lower()
+    default_model = PROVIDERS.get(provider, (None, None, ""))[2]
+    validate_route(provider, default_model, mode, e.get("OLLAMA_BASE_URL") or PROVIDERS["ollama"][0])
     roles: dict[str, ModelRef] = {}
     for r in ROLES:
         spec = e.get(f"EXECFLOW_MODEL_{r.upper()}")
-        roles[r] = ModelRef.parse(spec, provider) if spec and not mock else ModelRef(provider, PROVIDERS[provider][2])
-    return Routing(default_provider=provider, roles=roles, allow_rows=(e.get("EXECFLOW_SEND_ROWS", "false").lower() in {"1", "true", "yes"}), mock=mock)
+        roles[r] = ModelRef.parse(spec, provider) if spec else ModelRef(provider, default_model)
+        validate_route(roles[r].provider, roles[r].model, mode, e.get("OLLAMA_BASE_URL") or PROVIDERS["ollama"][0])
+    mock = all(ref.provider == "mock" for ref in roles.values())
+    return Routing(default_provider=provider, roles=roles, allow_rows=(e.get("EXECFLOW_SEND_ROWS", "false").lower() in {"1", "true", "yes"}), mock=mock, mode=mode)
 
 
 def client_for(routing: Routing, role: str) -> ChatClient:
     ref = routing.roles[role]
+    validate_route(ref.provider, ref.model, routing.mode, os.environ.get("OLLAMA_BASE_URL") or PROVIDERS["ollama"][0])
     if ref.provider == "mock":
         return MockClient(role)
     return ChatClient(ref.provider, ref.model)
+

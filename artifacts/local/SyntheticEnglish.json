@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "records": [
+    {
+      "kind": "action",
+      "text": "Review synthetic launcher proposal",
+      "owner": "Ali",
+      "due": "2026-11-12",
+      "priority": "normal",
+      "dependency": null,
+      "source": {
+        "name": "Synthetic localhost test",
+        "date": "2026-11-16",
+        "line": 1,
+        "quote": "Action: Review synthetic launcher proposal | Owner: Ali | Due: 2026-11-12"
+      },
+      "id": "0ecaa1d6-49f3-48ee-a845-6af63a4c4344",
+      "capturedOn": "2026-11-16",
+      "status": "closed",
+      "closedOn": "2026-11-16"
+    }
+  ]
+}

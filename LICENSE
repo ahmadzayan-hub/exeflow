@@ -1,12 +1,10 @@
-Copyright (c) 2026 Ahmed Zaian. All rights reserved.
+Copyright (c) 2026 Ahmad Zayan. All rights reserved.
 
-This repository is published so that the work can be read, evaluated and discussed.
-No licence is granted to copy, modify, distribute, host or use the software, the
-documentation or the illustrations without prior written permission from the
-copyright holder.
+This repository and its contents are proprietary and confidential. No licence,
+express or implied, is granted to copy, modify, distribute, sublicense, publish
+or otherwise use any part of it, in source or binary form, without prior
+written permission from the copyright holder.
 
-The fictional showcase data and the example register may be used to try the product
-locally. Third-party dependencies remain under their own licences.
-
-To contribute, see CONTRIBUTING.md. Contributions are accepted under the same terms
-unless agreed otherwise in writing.
+Where this repository includes third-party material, that material remains
+subject to its own terms, which are recorded in the files concerned or in
+THIRD_PARTY_NOTICES where present.
