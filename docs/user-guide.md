@@ -2,13 +2,14 @@
 
 ExecFlow answers five questions for a director: what did we decide, who owns it, when is it due, what slipped, and what needs me now. This guide walks through each screen. Every screen works in English and Arabic. Use the language button in the header; the layout flips to right to left.
 
-## The four screens
+## The screens
 
 | Screen | Use it to |
 |---|---|
 | **Portfolio** | See decisions, overdue items and what you are waiting for, then drill into any project or contract. |
 | **Timeline** | See start, completion, progress and milestones of every project on one calendar, with today marked. |
 | **Weekly brief** | Produce the one-page weekly review and share it as text, Markdown or PDF. |
+| **Commitments** | Keep the register of decisions and actions from minutes, with closure tracking, escalation and a weekly brief. |
 | **Reporting** | Turn a spreadsheet into key figures, charts, verified findings and a management report. |
 
 Press **C** anywhere to open Quick capture. Press **Esc** to close any dialog.
@@ -59,6 +60,16 @@ Date wording understood: today, tomorrow, weekdays, *next week*, *end of the mon
 
 **Dictation** uses your browser's speech service. In Chrome and Edge the audio is processed by the browser vendor, not by ExecFlow. If your browser does not support it, the button is hidden and typing works the same way.
 
+### Commitments strip
+
+Under the tiles, a strip shows the commitments register at a glance: *needs my decision*, *overdue*, *escalated to me*, *closure rate* and *closed on time*. It reads the same register as the Commitments screen, in this browser only. When the register is empty it invites you to paste the first minutes; when the stored register cannot be read it says so instead of showing zeros.
+
+![Commitments strip](assets/screens/commitments-strip-en.png)
+
+- **Closure rate**: closed items divided by all recorded items.
+- **Closed on time**: among closed items that had a due date, the share closed on or before it. Items without a due date are not counted either way.
+- **Escalated to me**: open or waiting items that are late by the escalation limit or more, or late with no owner.
+
 ## Timeline
 
 Each bar runs from start to completion. The filled part is actual progress and the black tick is where the plan says it should be. Diamonds are milestones: solid when done, red outline when late. A dotted tail is the defects liability period. Projects with no start or completion date are listed under the chart so nothing disappears. Click a bar to open the project.
@@ -70,6 +81,20 @@ The brief is built from the register: decisions, overdue items, waiting items, w
 - **Copy as text** gives plain text that pastes cleanly into WhatsApp or email.
 - **Download .md** gives Markdown.
 - **Print or save as PDF** uses the browser's print dialog; the page is laid out for A4.
+
+## Commitments and escalation
+
+The Commitments screen turns labelled minutes (`Action: ... | Owner: ... | Due: ...`) into a register you review before saving. Below the director follow-up numbers, the **Escalation** section applies one rule:
+
+| Days past due | What happens |
+|---|---|
+| 1 up to the limit | The owner is reminded. **Copy reminder** puts a ready sentence on the clipboard, in English or Arabic. |
+| The limit or more (default 7, you can change it) | The item goes to the director's list. |
+| Any lateness with no owner | The director's list, because there is nobody to remind. |
+
+Nothing is sent from the screen. The list says who to chase and who must decide, from the due dates in the register. Changing the limit affects the view only and is not saved.
+
+![Escalation](assets/screens/escalation-en.png)
 
 ## Reporting
 

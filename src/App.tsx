@@ -13,6 +13,7 @@ import { baseFor, defaultDataset, hasRegister, type DatasetKey } from "./data";
 import type { Lang } from "./i18n";
 import { bi, t } from "./i18n";
 import { DAY_MS, parseDate, reportingWindow, summarise } from "./metrics";
+import { CommitmentsStrip } from "./commitments/CommitmentsStrip";
 import { CommitmentsView } from "./commitments/CommitmentsView";
 import { ReportingView } from "./reporting/ReportingView";
 import { isPortfolio, loadLang, loadPortfolio, saveLang, savePortfolio } from "./storage";
@@ -217,6 +218,7 @@ export function App() {
         {view === "portfolio" && (
           <main>
             <SummaryTiles summary={summary} lang={lang} filters={filters} onRag={ragFilter} onAttention={attentionFilter} />
+            <CommitmentsStrip lang={lang} onOpen={() => go("commitments")} />
             <Insights portfolio={portfolio} today={today} lang={lang} />
             <AttentionPanel portfolio={portfolio} today={today} lang={lang} onSelect={setSelectedId} onDone={handlers.onDone} onSnooze={handlers.onSnooze} />
             <section className="projects" aria-label={t("projectsAndContracts", lang)}>

@@ -583,3 +583,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .provenance { font-size: 0.8rem; color: var(--muted); border-inline-start: 3px solid var(--green); padding-inline-start: 0.6rem; margin-bottom: 0.4rem; }
 .provenance.ai { border-color: var(--accent); }
 .key-input { padding: 0.4rem 0.55rem; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; width: 9rem; }
+
+/* Commitments strip on the portfolio home */
+.commit-strip { display: grid; gap: 0.6rem; margin-block: 1rem; padding: 0.9rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.commit-strip-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.commit-strip h2 { margin: 0; font-size: 1rem; }
+.commit-tiles { margin: 0; grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr)); }
+.commit-tiles .tile-value { font-size: 1.5rem; }
+.escalation input[type="number"] { width: 6rem; }

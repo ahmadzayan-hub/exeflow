@@ -4,6 +4,11 @@ All notable changes are listed here. The format follows [Keep a Changelog](https
 
 ## [Unreleased]
 
+### Added
+- **Escalation rules** on the commitments register: late items split into *remind the owner* and *needs the director* (limit adjustable, default 7 days; an item with no owner goes straight to the director). Copy a ready reminder in English or Arabic. Nothing is sent.
+- **Commitments strip** on the portfolio home: needs my decision, overdue, escalated to me, closure rate and closed on time.
+- **Closed on time** rate for items that had a due date.
+
 ## [0.4.0] - 2026-11-16
 
 ### Changed
