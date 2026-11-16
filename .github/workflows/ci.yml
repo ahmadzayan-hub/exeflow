@@ -17,6 +17,9 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - name: Public bundle must not contain private register data
+        run: |
+          if grep -rIl -E "RA/RM|RTA-LETTER|ACB-LETTER" dist; then echo "private reference found in public bundle"; exit 1; fi
       - run: npm run test:services
       - run: npm run test:backup
       - name: Install disposable pinned browser tooling

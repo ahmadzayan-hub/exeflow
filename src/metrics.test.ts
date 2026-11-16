@@ -13,8 +13,9 @@ import {
   upcomingMilestones,
 } from "./metrics";
 import type { Portfolio, Project } from "./types";
-import seed from "./data/portfolio.json";
-import { buildDemo } from "./data/demo";
+import { buildShowcase } from "./data/showcase";
+
+const seed = buildShowcase(new Date("2026-10-23T00:00:00Z"));
 
 const today = new Date("2026-09-02T00:00:00Z");
 
@@ -147,7 +148,7 @@ describe("attentionBuckets", () => {
     expect(b.overdueItems.map((a) => a.id)).toEqual(["d2"]);
     expect(b.overdueCount).toBe(2); // d2 + milestone m
     expect(needsDecisionCount(b)).toBe(2); // d1 + contract expiry
-    const s = summarise({ ...(seed as Portfolio), projects: [p] }, today);
+    const s = summarise({ ...(seed as Portfolio), inbox: [], projects: [p] }, today, { start: new Date("2026-08-01T00:00:00Z"), end: new Date("2026-08-31T00:00:00Z") });
     expect(s.needsDecision).toBe(2);
     expect(s.waiting).toBe(1);
     expect(s.overdue).toBe(2);
@@ -158,8 +159,8 @@ describe("attentionBuckets", () => {
 describe("reportingWindow", () => {
   it("uses explicit start and end when given", () => {
     const w = reportingWindow(seed as Portfolio);
-    expect(w.start.toISOString().slice(0, 10)).toBe("2026-08-01");
-    expect(w.end.toISOString().slice(0, 10)).toBe("2026-08-31");
+    expect(w.start.toISOString().slice(0, 10)).toBe("2026-09-23");
+    expect(w.end.toISOString().slice(0, 10)).toBe("2026-10-23");
   });
   it("falls back to the calendar month of the as-of date", () => {
     const p: Portfolio = { ...(seed as Portfolio), reportingPeriod: { label: { en: "x" }, asOf: "2026-09-15" } };
@@ -175,33 +176,36 @@ describe("reportingWindow", () => {
   });
 });
 
-describe("seed portfolio", () => {
+describe("showcase portfolio", () => {
   const portfolio = seed as Portfolio;
-  it("has unique ids and only verified or tbc confidence", () => {
+  const asOf = new Date("2026-10-23T00:00:00Z");
+  it("has unique ids and only illustrative or tbc confidence", () => {
     const ids = portfolio.projects.map((p) => p.id);
     expect(new Set(ids).size).toBe(ids.length);
-    for (const p of portfolio.projects) {
-      expect(["verified", "tbc"]).toContain(p.confidence);
-    }
+    for (const p of portfolio.projects) expect(["illustrative", "tbc"]).toContain(p.confidence);
   });
-  it("summarises without throwing and counts the expiring tram contract", () => {
-    const s = summarise(portfolio, today);
+  it("contains no real contract references", () => {
+    const text = JSON.stringify(portfolio);
+    expect(text).not.toMatch(/RA\/RM|RTA-LETTER|ACB-LETTER/);
+    expect(portfolio.projects.every((p) => (p.code ?? "").startsWith("DEMO-"))).toBe(true);
+  });
+  it("produces a populated, varied dashboard", () => {
+    const s = summarise(portfolio, asOf);
     expect(s.projects + s.contracts).toBe(portfolio.projects.length);
     expect(s.expiringIn90).toBeGreaterThanOrEqual(1);
-    expect(s.knownValueAed).toBeGreaterThan(96_000_000);
+    expect(s.needsDecision).toBeGreaterThanOrEqual(4);
+    expect(s.overdue).toBeGreaterThanOrEqual(4);
+    expect(s.waiting).toBeGreaterThanOrEqual(3);
+    expect(s.closedThisPeriod).toBeGreaterThanOrEqual(4);
+    expect(s.rag.green).toBeGreaterThan(0);
+    expect(s.rag.amber).toBeGreaterThan(0);
+    expect(s.rag.red).toBeGreaterThan(0);
+    expect(s.rag.grey).toBeGreaterThan(0);
   });
-});
-
-describe("demo portfolio", () => {
-  it("fills progress for every project and is marked demo", () => {
-    const demo = buildDemo(seed as Portfolio);
-    expect(demo.dataset).toBe("demo");
-    for (const p of demo.projects) {
-      expect(p.progress.planned).not.toBeNull();
-      expect(p.progress.actual).not.toBeNull();
-      expect(p.confidence).toBe("illustrative");
-    }
-    const s = summarise(demo, today);
-    expect(s.rag.grey).toBe(0);
+  it("moves with the date it is built for", () => {
+    const later = buildShowcase(new Date("2026-12-01T00:00:00Z"));
+    expect(later.reportingPeriod.asOf).toBe("2026-12-01");
+    expect(later.projects[0].completion).not.toBe(portfolio.projects[0].completion);
+    expect(summarise(later, new Date("2026-12-01T00:00:00Z")).overdue).toBe(summarise(portfolio, asOf).overdue);
   });
 });

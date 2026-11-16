@@ -1,0 +1,35 @@
+name: Bug report
+description: Something does not work as described
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Please do not attach real registers, contract details or reports. Reproduce with the example register in `data/register.example.json`.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you saw. A screenshot helps.
+    validations:
+      required: true
+  - type: dropdown
+    id: screen
+    attributes:
+      label: Screen
+      options: [Portfolio, Timeline, Weekly brief, Reporting, Quick capture, Data menu, Other]
+    validations:
+      required: true
+  - type: dropdown
+    id: lang
+    attributes:
+      label: Language and direction
+      options: [English, Arabic, Both]
+  - type: input
+    id: env
+    attributes:
+      label: Browser and device
+      placeholder: Chrome 130 on Android, Safari on iPhone, Edge on Windows
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce

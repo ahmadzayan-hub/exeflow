@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "records": [
+    {
+      "kind": "action",
+      "text": "مراجعة مقترح المشغل التجريبي",
+      "owner": "علي",
+      "due": "2026-11-12",
+      "priority": "normal",
+      "dependency": null,
+      "source": {
+        "name": "اختبار محلي اصطناعي",
+        "date": "2026-11-16",
+        "line": 1,
+        "quote": "إجراء: مراجعة مقترح المشغل التجريبي | المسؤول: علي | الاستحقاق: ٢٠٢٦-١١-١٢"
+      },
+      "id": "01b8197e-7cec-41a5-9855-bf9c31959e3a",
+      "capturedOn": "2026-11-16",
+      "status": "closed",
+      "closedOn": "2026-11-16"
+    }
+  ]
+}

@@ -4,8 +4,15 @@ dist/
 .DS_Store
 .vite/
 .venv/
-/data/
+# Runtime store of the Python service (uploads, memory). Anchored to the repo root so src/data is tracked.
+/data/*
+!/data/register.example.json
 server/**/__pycache__/
 server/*.egg-info/
 server/.pytest_cache/
 .env
+
+# Private register stays on the machine. Public builds ship fictional showcase data only.
+data/private/
+*.private.json
+release/

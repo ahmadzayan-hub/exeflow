@@ -8,10 +8,12 @@ vi.mock("./api", () => ({ setApiToken: vi.fn(), api: {
 } }));
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
 it("retries after denied authentication and clears the password field", async () => {
-  vi.mocked(api.health).mockRejectedValueOnce(new Error("Valid bearer token required"));
+  vi.mocked(api.health).mockRejectedValue(new Error("Valid bearer token required"));
   render(<ReportingView lang="en" />);
+  // The analytics service lives behind its own tab; the on-device mode is the default.
+  fireEvent.click(await screen.findByRole("tab", { name: /Analytics service/ }));
   const input = await screen.findByLabelText("Service access token");
-  await waitFor(() => expect(api.health).toHaveBeenCalledTimes(1));
+  await waitFor(() => expect(api.health).toHaveBeenCalledTimes(2));
   vi.mocked(api.health).mockResolvedValue({ version: "test", routing: { default_provider: "mock", roles: {}, allow_rows: false, mock: true, providers_with_keys: [] }, supported_files: [], datasets: 0 });
   vi.mocked(api.datasets).mockResolvedValue({ datasets: [] });
   vi.mocked(api.memory).mockResolvedValue({ items: [] });

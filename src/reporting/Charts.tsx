@@ -40,7 +40,7 @@ export function Chart({ spec }: { spec: ChartSpec }) {
       <figcaption>
         {spec.title} <span className="muted small">· {spec.evidence}</span>
       </figcaption>
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={spec.title}>
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={spec.title} style={{ direction: "ltr" }}>
         {tk.map((v) => (
           <g key={v}>
             <line x1={PAD.l} x2={W - PAD.r} y1={yOf(v)} y2={yOf(v)} className="grid" />

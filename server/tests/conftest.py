@@ -34,7 +34,7 @@ def dataset(xlsx_bytes):
 
 @pytest.fixture
 def csv_bytes() -> bytes:
-    return b"Contract,Owner,Value AED,Due\nRA/RM/24-10128,RMD,96000000,2028-02-12\nRA/RM/25-13910,RMD,19240000,\nRA/RM/23-6863,RMD,,2026-11-30\n"
+    return b"Contract,Owner,Value AED,Due\nDEMO-SIG-101,Dept,96000000,2028-02-12\nDEMO-TEL-204,Dept,19240000,\nDEMO-MNT-310,Dept,,2026-11-30\n"
 
 
 @pytest.fixture

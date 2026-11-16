@@ -2,13 +2,38 @@
 
 ## What it is
 
-A second screen in ExecFlow, "Reporting", and a Python service behind it. A director or chief engineer uploads a spreadsheet, CSV, PDF or Word file, optionally asks a question, and receives:
+The **Reporting** screen turns a file into a management report. By default it runs entirely in the browser on CSV and Excel files. A Python service adds PDF and Word support, agent reasoning and memory. A director or chief engineer opens a file, optionally asks a question, and receives:
 
 1. Key figures and charts computed from the file.
 2. Findings, each tied to evidence ids that can be re-run.
 3. A management report in English or Arabic in the RMD structure: executive summary, key facts, analysis, risks and gaps, recommended actions, next steps.
 
-Three sub-agents do the work. The **analyst** asks deterministic analytics tools for aggregates, trends, distributions and comparisons. The **reviewer** checks every number in every finding against the tool evidence and rejects anything unsupported. The **reporter** writes from confirmed findings only. Charts and KPI values are rebuilt from the evidence rows in code, so a model chooses what to show but never what the numbers are.
+In service mode, three sub-agents do the work. The **analyst** asks deterministic analytics tools for aggregates, trends, distributions and comparisons. The **reviewer** checks every number in every finding against the tool evidence and rejects anything unsupported. The **reporter** writes from confirmed findings only. Charts and KPI values are rebuilt from the evidence rows in code, so a model chooses what to show but never what the numbers are.
+
+## Two ways to analyse
+
+| | **On this device** (default) | **Analytics service** |
+|---|---|---|
+| Files | CSV, TSV, Excel | CSV, TSV, Excel, **PDF, Word** |
+| Where it runs | Your browser | Your server (`server/`), Docker or local |
+| Who writes the findings | Deterministic rules plus an evidence gate | Analyst, reviewer and reporter agents on open-weight models |
+| Memory across runs | No | Yes: definitions, baselines, findings (SQLite) |
+| Needs a server | No. Works on static hosting and offline | Yes |
+| Data leaves the device | No | To your own server only |
+
+### On this device
+
+The engine in [`src/engine/`](../src/engine/) reads the file, infers column kinds, then runs five analyses on the largest tables: concentration of a metric across a category, trend against the previous period, which group moved most, outliers (z-score above 2.5, with the interquartile fences shown), and data gaps. Each finding cites the evidence ids of the computations behind it. Every finding is written in both languages and both must pass the gate.
+
+The gate accepts a number only if it is in the cited evidence or is a simple derivation of it (a change, a percentage change, a share). That is deliberately generous so real findings are not rejected, which also means it is a safety net and not a proof: an invented value that happens to equal a derivation would pass. Keep the evidence ids visible and re-run the computation when a figure matters.
+
+The report follows the department structure: executive summary, key facts, analysis, risks and gaps, recommended actions, next steps.
+
+### Optional AI wording
+
+When the deployment has `GROQ_API_KEY`, a **Polish with AI** button appears. The browser sends the finding titles and details, KPI values, row counts and data gaps to `/api/narrate`, never rows or the file. The returned text replaces the verified report only if every number in it already exists in what was sent. Otherwise it is discarded and the screen says why. See [Deployment](deployment.md) for the access key and limits.
+
+Limits worth knowing: Excel files are read on the main thread, so very large workbooks take a moment; legacy `.xls` is not supported (save as `.xlsx`); text cells such as `N/A` are treated as empty; slash dates are read day first unless the column proves otherwise; Arabic text carries invisible left-to-right marks around Latin tokens, which show up if you paste it into a plain-text editor.
 
 ## Architecture
 
@@ -93,11 +118,18 @@ Hermes Agent (Nous Research, open source) supplies the long-lived layer: memory 
 
 Hermes reads uploaded documents from disk paths, not through its HTTP API, so files shared in chat must be saved locally before the skill uploads them.
 
-## Verified here, and what is not
+## Verified, and what is not
 
-Verified in this environment: ingestion of xlsx, csv and docx (pdf via pdfplumber is exercised by the same code path), profiling, all analytics tools, the evidence gate, memory recall and export, the API, and the full analyst, reviewer and reporter chain against a deterministic mock, both in tests and in a browser session.
+Verified in automated tests: browser parsing of CSV and Excel, profiling, every analytics tool, the evidence gate (including rejection of a fabricated number), the rules-based analyst, bilingual report headings, the narration check, the serverless function (validation, access key, rate limit, no key leakage, upstream failure handling), and in the Python service the ingestion, tools, memory, API and the analyst, reviewer and reporter chain against a deterministic mock.
 
-Not verified here: live Ollama inference, local-server egress restrictions, or the Hermes skill against a running install. Cloud execution is disabled and the dashboard proxy intentionally remains unavailable. All new policy tests are synthetic and offline.
+Verified in a browser session: opening the Reporting screen with the sample file, loading a real `.xlsx`, switching the report to Arabic, and the clear message for PDF and Word files.
+
+Not verified from the build environment, which has no outbound route to model providers: live Ollama inference, local-server egress restrictions, the deployed `/api/narrate` against Groq, and the Hermes skill against a running install. Run one analysis and `hermes skills list` on your side to confirm.
+
+Two execution policies apply, and they differ on purpose:
+
+- **Python service** (this document, sections above): offline by default. `EXECFLOW_MODE=mock` is the default and `local` allows only loopback Ollama. Cloud providers, Hermes model forwarding and the dashboard proxy are disabled in code. See [execution policy](execution-policy.md) and [API security](api-security.md).
+- **`/api/narrate`** (optional Vercel function): off unless `GROQ_API_KEY` is set on your own deployment. It receives aggregate finding text and KPI values only, never rows, and is the only code path that can call a cloud model. If your policy forbids cloud models, do not set the key and the function stays disabled. Treat this as a decision for the data owner, not a default.
 
 ## Extending
 

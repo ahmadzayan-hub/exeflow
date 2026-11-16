@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ExecFlow">
+  <rect width="64" height="64" rx="14" fill="#c8102e"/>
+  <path d="M22 54 30 17M42 54 34 17" stroke="#fff" stroke-width="4.5" stroke-linecap="round" fill="none"/>
+  <path d="M25 44h14M27 34h10M29 25h6" stroke="#fff" stroke-width="3.2" stroke-linecap="round"/>
+  <path d="M32 6 38 12 32 18 26 12z" fill="#fff"/>
+</svg>

@@ -102,6 +102,8 @@ const table = {
   importError: ["The file is not a valid portfolio JSON (schemaVersion 1 with a projects array).", "الملف ليس ملف محفظة صالحاً (schemaVersion 1 مع مصفوفة projects)."],
   dataset: ["Dataset", "مجموعة البيانات"],
   seed: ["Register", "السجل"],
+  showcase: ["Showcase data", "بيانات توضيحية"],
+  working: ["Working copy", "نسخة عمل"],
   demo: ["Demo", "توضيحي"],
   imported: ["Imported", "مستورد"],
   clearFilters: ["Clear filters", "مسح التصفية"],

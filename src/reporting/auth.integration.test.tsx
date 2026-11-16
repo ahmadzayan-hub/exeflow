@@ -14,21 +14,26 @@ it('recovers from an invalid token through the real wrapper without storing cred
     return new Response(JSON.stringify(body),{status:200});
   });
   vi.stubGlobal('fetch',fetcher);
+  // The on-device panel also asks /api/narrate whether optional AI wording is enabled; that is not a service call.
+  const serviceCalls = () => fetcher.mock.calls.filter(([url]) => !String(url).includes('narrate'));
   render(<ReportingView lang="en" />);
-  await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(1));
+  // One probe from the mode switch, then one from the service panel once its tab is opened.
+  await waitFor(() => expect(serviceCalls()).toHaveLength(1));
+  fireEvent.click(await screen.findByRole('tab',{name:/Analytics service/}));
+  await waitFor(() => expect(serviceCalls()).toHaveLength(2));
   let input=await screen.findByLabelText('Service access token');
   fireEvent.change(input,{target:{value:'synthetic-invalid'}});
   fireEvent.click(screen.getByRole('button',{name:'Connect'}));
-  await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2));
+  await waitFor(() => expect(serviceCalls()).toHaveLength(3));
   await waitFor(() => expect((screen.getByLabelText('Service access token') as HTMLInputElement).value).toBe(''));
   input=screen.getByLabelText('Service access token');
   fireEvent.change(input,{target:{value:'synthetic-valid'}});
   fireEvent.click(screen.getByRole('button',{name:'Connect'}));
   await screen.findByRole('button',{name:'Disconnect'});
-  await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(5));
+  await waitFor(() => expect(serviceCalls()).toHaveLength(6));
   expect(screen.queryByLabelText('Service access token')).toBeNull();
   expect(localStorage.length).toBe(0); expect(sessionStorage.length).toBe(0);
-  for(const [url,init] of fetcher.mock.calls) {
+  for(const [url,init] of serviceCalls()) {
     expect(url).not.toContain('synthetic-');
     expect(init?.redirect).toBe('error'); expect(init?.cache).toBe('no-store');
   }

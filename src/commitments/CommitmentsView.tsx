@@ -5,6 +5,7 @@ import {
   readRegister, saveRegister, weeklyBrief, STORAGE_KEY, type Candidate, type Register, type Status,
 } from "./register";
 import { filterCommitments, registerSummary, type RegisterView } from "./Workbench";
+import { EscalationPanel } from "./EscalationPanel";
 import { IntegrationPanel, type SourceEvidence } from "./IntegrationPanel";
 import "./commitments.css";
 
@@ -159,6 +160,7 @@ export function CommitmentsView({ lang }: { lang: Lang }) {
       </div>
       <p>{label(`Showing ${visible.length} of ${register.records.length} records.`, `يُعرض ${visible.length} من أصل ${register.records.length} بنداً.`)}</p>
     </section>
+    <EscalationPanel register={register} today={today} lang={lang} />
     <section aria-labelledby="register-title">
       <h2 id="register-title">{label("Saved commitments", "الالتزامات المحفوظة")} ({register.records.length})</h2>
       <ul className="commitment-list">{visible.map((r) => <li key={r.id}>
